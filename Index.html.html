@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - الأداء المالي | Sakan TG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page-plane:     #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --border:         rgba(11,11,11,0.10);
+    --series-1: #2a78d6; /* عبدالرحمن */
+    --series-2: #eb6834; /* محمد فتحي */
+    --series-3: #1baf7a; /* ايهاب الشامي */
+    --series-4: #eda100; /* وائل */
+    --good: #0ca30c;
+    --warning: #fab219;
+    --critical: #d03b3b;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--page-plane);
+    color: var(--text-primary);
+    font-family: 'Cairo', system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  body { padding: 24px 16px 64px; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  header.top { margin-bottom: 24px; }
+  header.top h1 { font-size: 22px; font-weight: 800; margin: 0 0 4px; }
+  header.top .meta { color: var(--text-secondary); font-size: 13px; }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .card .label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+  .card .value { font-size: 26px; font-weight: 800; }
+  .card .value.money::after { content: ' جنيه'; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+  .card.accent-paid .value { color: var(--good); }
+  .card.accent-remaining .value { color: var(--critical); }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .panel {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .panel h2 { font-size: 15px; font-weight: 700; margin: 0 0 12px; }
+  .panel .chart-box { position: relative; min-height: 200px; display: flex; align-items: center; justify-content: center; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: right; font-weight: 700; color: var(--text-secondary);
+    font-size: 12px; padding: 8px 10px; border-bottom: 1px solid var(--gridline);
+    cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  thead th:hover { color: var(--text-primary); }
+  thead th .arrow { font-size: 10px; opacity: .5; margin-inline-start: 4px; }
+  tbody td { padding: 9px 10px; border-bottom: 1px solid var(--gridline); white-space: nowrap; }
+  tbody tr:hover { background: var(--page-plane); }
+  tbody td.num { font-variant-numeric: tabular-nums; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+  }
+  .badge.paid { background: rgba(12,163,12,0.12); color: var(--good); }
+  .badge.overdue { background: rgba(208,59,59,0.12); color: var(--critical); }
+  .badge.pending { background: rgba(250,178,25,0.18); color: #8a6100; }
+
+  .unit-link { color: var(--series-1); text-decoration: none; font-weight: 700; }
+  .unit-link:hover { text-decoration: underline; }
+
+  .table-wrap { overflow-x: auto; }
+
+  /* simple inline charts (no external library) */
+  .bars { display: flex; flex-direction: column; gap: 14px; padding: 6px 2px; width: 100%; }
+  .bar-row .bar-row-label { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 5px; }
+  .bar-row .bar-row-label .name { font-weight: 700; }
+  .bar-row .bar-row-label .pct { color: var(--text-secondary); }
+  .bar-track { display: flex; height: 16px; border-radius: 5px; overflow: hidden; background: var(--gridline); }
+  .bar-seg.paid-seg { background: var(--good); }
+  .bar-seg.remaining-seg { background: var(--critical); }
+  .chart-legend { display: flex; gap: 16px; justify-content: center; margin-top: 14px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
+  .chart-legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-inline-end: 5px; vertical-align: -1px; }
+  .donut-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .donut-center-label { font-size: 13px; color: var(--text-secondary); text-anchor: middle; }
+  .donut-center-value { font-size: 22px; font-weight: 800; fill: var(--text-primary); text-anchor: middle; }
+  .chart-fallback { padding: 20px; color: var(--text-muted); font-size: 13px; text-align: center; }
+
+  footer { margin-top: 24px; color: var(--text-muted); font-size: 12px; text-align: center; }
+
+  @media (max-width: 900px) {
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page-plane: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --gridline: #2c2c2a;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --series-3: #199e70;
+      --series-4: #c98500;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>📊 Dashboard - الأداء المالي للمشروع</h1>
+    <div class="meta">Sakan TG — بيانات 29 وحدة · آخر تحديث: <span id="lastUpdated"></span></div>
+  </header>
+
+  <section class="cards">
+    <div class="card">
+      <div class="label">إجمالي قيمة العقود</div>
+      <div class="value money" id="cardTotal">-</div>
+    </div>
+    <div class="card accent-paid">
+      <div class="label">إجمالي المدفوع</div>
+      <div class="value money" id="cardPaid">-</div>
+    </div>
+    <div class="card accent-remaining">
+      <div class="label">الباقي</div>
+      <div class="value money" id="cardRemaining">-</div>
+    </div>
+    <div class="card">
+      <div class="label">النسبة المدفوعة</div>
+      <div class="value" id="cardPercent">-</div>
+    </div>
+  </section>
+
+  <section class="grid-2">
+    <div class="panel">
+      <h2>المدفوع مقابل الباقي حسب المشرف</h2>
+      <div class="chart-box" id="supervisorChart"></div>
+    </div>
+    <div class="panel">
+      <h2>حالة الوحدات</h2>
+      <div class="chart-box" id="statusChart"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>تفاصيل الوحدات (29)</h2>
+    <div class="table-wrap">
+      <table id="unitsTable">
+        <thead>
+          <tr>
+            <th data-key="unit">رقم الوحدة</th>
+            <th data-key="owner">اسم العميل</th>
+            <th data-key="sup">المشرف</th>
+            <th data-key="total">قيمة العقد</th>
+            <th data-key="paid">المدفوع</th>
+            <th data-key="remaining">الباقي</th>
+            <th data-key="percent">النسبة</th>
+            <th data-key="status">الحالة</th>
+          </tr>
+        </thead>
+        <tbody id="unitsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    ملخص مالي داخلي — Sakan TG (Eltorky Group). البيانات دي لقطة (snapshot) من نوشن، بتتحدث لما يتم طلب تحديثها.
+  </footer>
+
+</div>
+
+<script>
+const GENERATED_AT = "2026-09-28";
+
+const units = [
+  {unit:"123508",owner:"Mr. Khaled Ali",sup:"عبدالرحمن",total:340000,paid:170000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/p/48af26edf93c833abe2301a60cf414ed"},
+  {unit:"123518",owner:"Ms. Amal Abou El-Enein",sup:"عبدالرحمن",total:340000,paid:135000,overdue:2,pending:1,paidCount:1,url:"https://app.notion.com/p/2dff26edf93c836ca9b80111978daf4f"},
+  {unit:"123608",owner:"Mr. Ahmed Mohamed",sup:"عبدالرحمن",total:340000,paid:170000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/p/c01f26edf93c8334bdd78189c5ec38b9"},
+  {unit:"123612",owner:"Mr. Gaber Abdel-Rahim",sup:"عبدالرحمن",total:582500,paid:582500,overdue:0,pending:0,paidCount:0,url:"https://app.notion.com/p/120f26edf93c83bfaa0f01142f55f767"},
+  {unit:"123616",owner:"Ms. Samar Mahmoud Mansour",sup:"عبدالرحمن",total:300000,paid:50000,overdue:3,pending:1,paidCount:0,url:"https://app.notion.com/p/d8af26edf93c8375bb5f81586dac8a1d"},
+  {unit:"123618",owner:"Mr. Khaled Bahaa",sup:"عبدالرحمن",total:345000,paid:90000,overdue:0,pending:4,paidCount:1,url:"https://app.notion.com/p/ea4f26edf93c82049fca01b8206716c0"},
+  {unit:"122614",owner:"Mr. Wael Abdel-Kader & Mr. Osama",sup:"محمد فتحي",total:340000,paid:85000,overdue:1,pending:2,paidCount:2,url:"https://app.notion.com/e11f26edf93c823d8fbe81ecd88dfccc"},
+  {unit:"122724",owner:"Mr. Mohamed Hassanein",sup:"محمد فتحي",total:620000,paid:465000,overdue:0,pending:1,paidCount:3,url:"https://app.notion.com/335f26edf93c826e99ec01068a35fd29"},
+  {unit:"122824",owner:"Mr. Tamer Hassanein",sup:"محمد فتحي",total:620000,paid:465000,overdue:0,pending:1,paidCount:3,url:"https://app.notion.com/300f26edf93c831593c60160020e919c"},
+  {unit:"123011",owner:"Mr. Ramy Abdel-Fattah",sup:"محمد فتحي",total:400000,paid:205000,overdue:0,pending:3,paidCount:2,url:"https://app.notion.com/dd9f26edf93c83df914f0189d0f6da6c"},
+  {unit:"123013",owner:"Mr. Islam Alaa",sup:"محمد فتحي",total:200000,paid:50000,overdue:0,pending:3,paidCount:1,url:"https://app.notion.com/ef3f26edf93c836e8387010378eee8a6"},
+  {unit:"123023",owner:"Mr. Wael Awad",sup:"محمد فتحي",total:345000,paid:175000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/818f26edf93c826195fb81bb98e5630e"},
+  {unit:"123323",owner:"Mr. Ahmed Nasr",sup:"محمد فتحي",total:250000,paid:200000,overdue:0,pending:2,paidCount:1,url:"https://app.notion.com/d33f26edf93c83b4bb4e01f422ed12d9"},
+  {unit:"129319",owner:"Mr. Ahmed Mabrouk",sup:"محمد فتحي",total:350000,paid:125000,overdue:1,pending:3,paidCount:1,url:"https://app.notion.com/3a6f26edf93c8330a2d001a1e4a7e9c8"},
+  {unit:"123218",owner:"Mr. Mohamed Hussein",sup:"ايهاب الشامي",total:340000,paid:170000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/p/795f26edf93c83698d7d81d6c183118e"},
+  {unit:"123325",owner:"Ms. Fadwa Ibrahim",sup:"ايهاب الشامي",total:500000,paid:250000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/p/c49f26edf93c83278f1481cbe02ac855"},
+  {unit:"123408",owner:"Mr. Hussein Mohamed",sup:"ايهاب الشامي",total:325000,paid:255000,overdue:1,pending:0,paidCount:2,url:"https://app.notion.com/p/435f26edf93c834591498144dec6c9ae"},
+  {unit:"123417",owner:"Mr. Mohamed Taher",sup:"ايهاب الشامي",total:300000,paid:225000,overdue:0,pending:1,paidCount:3,url:"https://app.notion.com/p/62bf26edf93c83309956815a2b33434a"},
+  {unit:"123418",owner:"Mr. Abdel-Nasser",sup:"ايهاب الشامي",total:320000,paid:0,overdue:0,pending:4,paidCount:0,url:"https://app.notion.com/p/27df26edf93c821c89f48191c1d7b790"},
+  {unit:"123420",owner:"Mr. Mohamed Gamal",sup:"ايهاب الشامي",total:515000,paid:128750,overdue:1,pending:2,paidCount:1,url:"https://app.notion.com/p/444f26edf93c83b8aa698113b693dd52"},
+  {unit:"123425",owner:"Mr. Ahmed Fawzy",sup:"ايهاب الشامي",total:500000,paid:250000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/p/870f26edf93c82e48abd8104a8d52929"},
+  {unit:"123101",owner:"Ms. Marwa Hamdy",sup:"وائل",total:205000,paid:51000,overdue:1,pending:3,paidCount:1,url:"https://app.notion.com/83af26edf93c836bae310195126188b8"},
+  {unit:"123115",owner:"Mr. Mohamed Farouk",sup:"وائل",total:345000,paid:90000,overdue:1,pending:2,paidCount:1,url:"https://app.notion.com/29af26edf93c8276bdac01f519c31644"},
+  {unit:"123204",owner:"Mr. Mohamed Mostafa",sup:"وائل",total:380000,paid:110000,overdue:0,pending:3,paidCount:1,url:"https://app.notion.com/af0f26edf93c8275baba811d170ec4c2"},
+  {unit:"123718",owner:"Mr. Ibrahim Hassan",sup:"وائل",total:380000,paid:217000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/644f26edf93c82798eec01cb30715c25"},
+  {unit:"123719",owner:"ElTorky Group",sup:"وائل",total:350000,paid:350000,overdue:0,pending:0,paidCount:1,url:"https://app.notion.com/34af26edf93c83a89b0001a8441c4cab"},
+  {unit:"123821",owner:"Mr. Nader El-Sayed",sup:"وائل",total:370000,paid:130000,overdue:1,pending:3,paidCount:1,url:"https://app.notion.com/820f26edf93c836e981901961616aa71"},
+  {unit:"123913",owner:"Mr. Shady Adel",sup:"وائل",total:270000,paid:260000,overdue:1,pending:0,paidCount:0,url:"https://app.notion.com/9c9f26edf93c82c58aa581f4ac94c57d"},
+  {unit:"123923",owner:"Mr. Ayman Youssef",sup:"وائل",total:345000,paid:90000,overdue:1,pending:2,paidCount:1,url:"https://app.notion.com/43ef26edf93c825580138146d2a0d6ba"}
+];
+
+// derive fields
+units.forEach(u => {
+  u.remaining = u.total - u.paid;
+  u.percent = u.total > 0 ? Math.round((u.paid / u.total) * 100) : 0;
+  u.status = u.remaining <= 0 ? 'paid' : (u.overdue > 0 ? 'overdue' : 'pending');
+});
+
+function fmt(n) { return n.toLocaleString('en-US'); }
+
+// ---- summary cards ----
+const totalContract = units.reduce((s,u) => s + u.total, 0);
+const totalPaid = units.reduce((s,u) => s + u.paid, 0);
+const totalRemaining = totalContract - totalPaid;
+const overallPercent = Math.round((totalPaid / totalContract) * 100);
+
+document.getElementById('cardTotal').textContent = fmt(totalContract);
+document.getElementById('cardPaid').textContent = fmt(totalPaid);
+document.getElementById('cardRemaining').textContent = fmt(totalRemaining);
+document.getElementById('cardPercent').textContent = overallPercent + '%';
+document.getElementById('lastUpdated').textContent = GENERATED_AT;
+
+// ---- units table (rendered first, independent of charts) ----
+const statusLabel = { paid: 'مدفوعة بالكامل', overdue: 'فيها متأخر', pending: 'جارية' };
+const statusBadgeClass = { paid: 'paid', overdue: 'overdue', pending: 'pending' };
+
+function renderTable(rows) {
+  const body = document.getElementById('unitsBody');
+  body.innerHTML = rows.map(u => `
+    <tr>
+      <td><a class="unit-link" href="${u.url}" target="_blank" rel="noopener">${u.unit}</a></td>
+      <td>${u.owner}</td>
+      <td>${u.sup}</td>
+      <td class="num">${fmt(u.total)}</td>
+      <td class="num">${fmt(u.paid)}</td>
+      <td class="num">${fmt(u.remaining)}</td>
+      <td class="num">${u.percent}%</td>
+      <td><span class="badge ${statusBadgeClass[u.status]}">${statusLabel[u.status]}</span></td>
+    </tr>
+  `).join('');
+}
+renderTable(units);
+
+let sortKey = null, sortDir = 1;
+document.querySelectorAll('#unitsTable thead th').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.key;
+    sortDir = (sortKey === key) ? -sortDir : 1;
+    sortKey = key;
+    const sorted = [...units].sort((a,b) => {
+      let va = a[key], vb = b[key];
+      if (typeof va === 'string') return va.localeCompare(vb, 'ar') * sortDir;
+      return (va - vb) * sortDir;
+    });
+    renderTable(sorted);
+  });
+});
+
+// ---- charts: plain SVG/HTML, no external library, works with no internet ----
+const supervisors = ["عبدالرحمن", "محمد فتحي", "ايهاب الشامي", "وائل"];
+const supColors = { "عبدالرحمن": "#2a78d6", "محمد فتحي": "#eb6834", "ايهاب الشامي": "#1baf7a", "وائل": "#eda100" };
+
+function buildSupervisorChart() {
+  const rows = supervisors.map(s => {
+    const list = units.filter(u => u.sup === s);
+    const total = list.reduce((a,u) => a + u.total, 0);
+    const paid = list.reduce((a,u) => a + u.paid, 0);
+    const remaining = total - paid;
+    const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
+    return { name: s, total, paid, remaining, pct };
+  });
+
+  const html = `
+    <div class="bars">
+      ${rows.map(r => `
+        <div class="bar-row">
+          <div class="bar-row-label">
+            <span class="name">${r.name}</span>
+            <span class="pct">${fmt(r.paid)} / ${fmt(r.total)} جنيه (${r.pct}%)</span>
+          </div>
+          <div class="bar-track" title="${r.name}: مدفوع ${fmt(r.paid)} — باقي ${fmt(r.remaining)}">
+            <div class="bar-seg paid-seg" style="width:${r.total ? (r.paid / r.total * 100) : 0}%"></div>
+            <div class="bar-seg remaining-seg" style="width:${r.total ? (r.remaining / r.total * 100) : 0}%"></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="chart-legend">
+      <span><span class="dot" style="background:var(--good)"></span>المدفوع</span>
+      <span><span class="dot" style="background:var(--critical)"></span>الباقي</span>
+    </div>
+  `;
+  document.getElementById('supervisorChart').innerHTML = html;
+}
+
+function buildStatusDonut() {
+  const statusCounts = {
+    paid: units.filter(u => u.status === 'paid').length,
+    overdue: units.filter(u => u.status === 'overdue').length,
+    pending: units.filter(u => u.status === 'pending').length
+  };
+  const total = units.length;
+  const segs = [
+    { key: 'paid', label: 'مدفوعة بالكامل', color: '#0ca30c', value: statusCounts.paid },
+    { key: 'overdue', label: 'فيها متأخر', color: '#d03b3b', value: statusCounts.overdue },
+    { key: 'pending', label: 'جارية', color: '#fab219', value: statusCounts.pending }
+  ];
+
+  const size = 180, r = 70, cx = size/2, cy = size/2, circumference = 2 * Math.PI * r;
+  let offset = 0;
+  const arcs = segs.map(s => {
+    const frac = total > 0 ? s.value / total : 0;
+    const dash = frac * circumference;
+    const circle = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="22"
+      stroke-dasharray="${dash} ${circumference - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})">
+      <title>${s.label}: ${s.value} وحدة</title></circle>`;
+    offset += dash;
+    return circle;
+  }).join('');
+
+  const svg = `
+    <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img" aria-label="حالة الوحدات">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--gridline)" stroke-width="22"/>
+      ${arcs}
+      <text x="${cx}" y="${cy - 4}" class="donut-center-value">${total}</text>
+      <text x="${cx}" y="${cy + 16}" class="donut-center-label">وحدة</text>
+    </svg>
+  `;
+  const legend = `
+    <div class="chart-legend">
+      ${segs.map(s => `<span><span class="dot" style="background:${s.color}"></span>${s.label} (${s.value})</span>`).join('')}
+    </div>
+  `;
+  document.getElementById('statusChart').innerHTML = `<div class="donut-wrap">${svg}${legend}</div>`;
+}
+
+buildSupervisorChart();
+buildStatusDonut();
+</script>
+</body>
+</html>
