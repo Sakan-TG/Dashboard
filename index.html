@@ -1,4 +1,8 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>لوحة حجوزات التشطيبات</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -104,12 +108,43 @@
   .section-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
   .empty{text-align:center;color:var(--muted);padding:18px !important;white-space:normal !important}
 
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{background:var(--muted-bg)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .report-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .report-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .report-head h3{margin:0;font-size:15px;font-weight:800}
+  .print-only{display:none}
+
+  @media print{
+    @page{size:A4 landscape;margin:10mm}
+    body{background:#fff;color:#000;padding:0}
+    body *{visibility:hidden}
+    #print-area, #print-area *{visibility:visible}
+    #print-area{position:absolute;inset:0 0 auto 0;border:none;padding:0;background:#fff}
+    #print-area .no-print{display:none !important}
+    #print-area .print-only{display:block}
+    #print-area .table-scroll{max-height:none !important;overflow:visible !important;border:none}
+    #print-area table{min-width:0 !important;font-size:10.5px}
+    #print-area thead th{position:static;color:#000;border-bottom:1.5px solid #000}
+    #print-area tbody td, #print-area tfoot td{padding:5px 6px;color:#000}
+    #print-area tr{break-inside:avoid}
+    #print-area tfoot{display:table-row-group}
+    #print-area .kpi-card{background:#fff !important;border:1px solid #999 !important}
+    #print-area .kpi-value{font-size:16px}
+    #print-area .chart-row, #print-area canvas{display:none}
+  }
+
   @media (max-width:640px){
     .kpi-row{grid-template-columns:repeat(2,1fr)}
     .chart-row{grid-template-columns:1fr}
     table{min-width:720px}
   }
 </style>
+</head>
+<body>
+
 
 <div class="wrap">
 
@@ -144,12 +179,25 @@
       <select id="f-building" onchange="dash.applyFilters()"><option value="all">كل العمارات</option></select>
     </div>
     <div class="filter-group">
+      <label for="f-quick">فترة سريعة</label>
+      <select id="f-quick" onchange="dash.applyQuickRange(this.value)">
+        <option value="">اختاري...</option>
+        <option value="this">الشهر الحالي</option>
+        <option value="next3">الـ 3 شهور الجاية</option>
+        <option value="next6">الـ 6 شهور الجاية</option>
+        <option value="last3">آخر 3 شهور</option>
+        <option value="last6">آخر 6 شهور</option>
+        <option value="year">السنة الحالية</option>
+        <option value="all">كل الفترات</option>
+      </select>
+    </div>
+    <div class="filter-group">
       <label for="f-month-from">من شهر</label>
-      <select id="f-month-from" onchange="dash.applyFilters()"></select>
+      <select id="f-month-from" onchange="dash.clearQuick();dash.applyFilters()"></select>
     </div>
     <div class="filter-group">
       <label for="f-month-to">إلى شهر</label>
-      <select id="f-month-to" onchange="dash.applyFilters()"></select>
+      <select id="f-month-to" onchange="dash.clearQuick();dash.applyFilters()"></select>
     </div>
     <div class="filter-group grow">
       <label for="f-search">بحث بالاسم أو رقم الوحدة</label>
@@ -161,9 +209,14 @@
   <div class="section-title">الصورة العامة</div>
   <section class="kpi-row" id="kpi-row"></section>
 
-  <section class="period">
+  <section class="period" id="print-area">
+    <div class="print-only" style="margin-bottom:6px">
+      <div style="font-size:12px;font-weight:700">التركي جروب — Eltorky Group</div>
+      <div style="font-size:18px;font-weight:800">تقرير تحصيل الأقساط</div>
+      <div style="font-size:12px" id="print-meta"></div>
+    </div>
     <div class="period-head">
-      <h2>الفترة المحددة</h2>
+      <h2>تقرير الفترة المحددة</h2>
       <span class="range" id="period-range"></span>
     </div>
     <div class="kpi-row" id="period-kpis"></div>
@@ -179,6 +232,42 @@
           </tr></thead>
           <tbody id="months-tbody"></tbody>
           <tfoot id="months-tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="report-head">
+        <div>
+          <h3>تقرير الوحدات في الفترة</h3>
+          <span class="table-note" id="report-count"></span>
+        </div>
+        <div class="report-actions no-print">
+          <select id="f-report-show" onchange="dash.renderReport()" aria-label="عرض">
+            <option value="all">كل الوحدات اللي عليها أقساط في الفترة</option>
+            <option value="late">الوحدات المتأخرة بس</option>
+            <option value="clear">الوحدات المنتظمة بس</option>
+          </select>
+          <button class="btn" onclick="dash.exportCSV()">تنزيل Excel</button>
+          <button class="btn primary" onclick="dash.printReport()">🖨 طباعة التقرير PDF</button>
+        </div>
+      </div>
+      <div class="table-scroll" style="max-height:520px;overflow-y:auto">
+        <table id="report-table" style="min-width:1000px">
+          <thead><tr>
+            <th data-key="unit">الوحدة</th>
+            <th data-key="name">اسم العميل</th>
+            <th data-key="building">العمارة</th>
+            <th data-key="category">الفئة</th>
+            <th data-key="count">عدد الأقساط</th>
+            <th data-key="total">المطلوب في الفترة</th>
+            <th data-key="paid">المحصَّل</th>
+            <th data-key="late">المتأخر</th>
+            <th data-key="future">لسه مجاش ميعاده</th>
+            <th data-key="stateOrder">الحالة</th>
+            <th data-key="phone">الهاتف</th>
+          </tr></thead>
+          <tbody id="report-tbody"></tbody>
+          <tfoot id="report-tfoot"></tfoot>
         </table>
       </div>
     </div>
@@ -4221,6 +4310,11 @@ function localTodayISO(){
   const p = n => String(n).padStart(2,'0');
   return d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate());
 }
+function addMonths(key, n){
+  let [y,m] = key.split('-').map(Number);
+  m += n; while (m > 12){ m -= 12; y++; } while (m < 1){ m += 12; y--; }
+  return y + '-' + String(m).padStart(2,'0');
+}
 function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 /* Split every active booking's installments into paid / overdue / not-yet-due.
@@ -4266,7 +4360,7 @@ class Dashboard {
     this.todayMonth = monthKey(this.today);
     allocate(this.raw, this.today);
     this.filtered = this.raw;
-    this.sortState = { table:{key:null,dir:'desc'}, upcoming:{key:'due_date',dir:'asc'}, late:{key:'lateAmount',dir:'desc'} };
+    this.sortState = { table:{key:null,dir:'desc'}, upcoming:{key:'due_date',dir:'asc'}, late:{key:'lateAmount',dir:'desc'}, report:{key:'total',dir:'desc'} };
     this.charts = {};
     this.init();
   }
@@ -4293,11 +4387,12 @@ class Dashboard {
     this.months.forEach(m=>{ fromSel.add(new Option(monthLabel(m), m)); toSel.add(new Option(monthLabel(m), m)); });
     this.setFullRange();
 
-    [['clients-table','table'],['upcoming-table','upcoming'],['late-table','late']].forEach(([id,which])=>{
+    [['clients-table','table'],['upcoming-table','upcoming'],['late-table','late'],['report-table','report']].forEach(([id,which])=>{
       document.querySelectorAll('#'+id+' thead th[data-key]').forEach(th=> th.addEventListener('click', ()=> this.sortTable(which, th.dataset.key)));
     });
     this.updateSortIndicators('upcoming');
     this.updateSortIndicators('late');
+    this.updateSortIndicators('report');
     this.applyFilters();
   }
 
@@ -4307,7 +4402,36 @@ class Dashboard {
     document.getElementById('f-month-to').value = this.months[this.months.length-1];
   }
 
+  clearQuick(){ document.getElementById('f-quick').value = ''; }
+
+  applyQuickRange(kind){
+    if (!kind || !this.months.length) return;
+    const cur = this.todayMonth;
+    let from, to;
+    if (kind === 'all'){ from = this.months[0]; to = this.months[this.months.length-1]; }
+    else if (kind === 'this'){ from = cur; to = cur; }
+    else if (kind === 'next3'){ from = cur; to = addMonths(cur, 2); }
+    else if (kind === 'next6'){ from = cur; to = addMonths(cur, 5); }
+    else if (kind === 'last3'){ from = addMonths(cur, -2); to = cur; }
+    else if (kind === 'last6'){ from = addMonths(cur, -5); to = cur; }
+    else if (kind === 'year'){ from = cur.slice(0,4)+'-01'; to = cur.slice(0,4)+'-12'; }
+    // snap to the months that actually have installments
+    const f = this.months.find(m=> m >= from);
+    const tList = this.months.filter(m=> m <= to);
+    const t = tList[tList.length-1];
+    if (!f || !t || f > t){
+      // no installments inside that window: still show it as an empty period
+      this.forcedRange = {from, to};
+    } else {
+      this.forcedRange = null;
+      document.getElementById('f-month-from').value = f;
+      document.getElementById('f-month-to').value = t;
+    }
+    this.applyFilters();
+  }
+
   resetFilters(){
+    this.clearQuick(); this.forcedRange = null;
     document.getElementById('f-status').value = 'نشط';
     document.getElementById('f-category').value = 'all';
     document.getElementById('f-building').value = 'all';
@@ -4343,6 +4467,8 @@ class Dashboard {
     let mFrom = document.getElementById('f-month-from').value;
     let mTo = document.getElementById('f-month-to').value;
     if (mFrom > mTo){ const t = mFrom; mFrom = mTo; mTo = t; }
+    if (this.forcedRange && document.getElementById('f-quick').value){ mFrom = this.forcedRange.from; mTo = this.forcedRange.to; }
+    else this.forcedRange = null;
     this.monthFrom = mFrom; this.monthTo = mTo;
 
     // per-booking late amount inside the selected range (used by tables)
@@ -4352,6 +4478,7 @@ class Dashboard {
 
     this.renderKPIs();
     this.renderPeriod();
+    this.renderReport();
     this.renderCharts();
     this.renderLate();
     this.renderTable();
@@ -4396,10 +4523,7 @@ class Dashboard {
     const lateUnits = new Set(lateRows.map(x=>x.r.id)).size;
     const anyPastDue = rows.some(x=> x.i.due_date < this.today);
 
-    const sameMonth = this.monthFrom === this.monthTo;
-    document.getElementById('period-range').textContent = sameMonth
-      ? `شهر ${monthLabel(this.monthFrom)}`
-      : `من ${monthLabel(this.monthFrom)} إلى ${monthLabel(this.monthTo)}`;
+    document.getElementById('period-range').textContent = this.periodText();
 
     let lateCard;
     if (late > 0){
@@ -4560,16 +4684,119 @@ class Dashboard {
     if (st.key === key) st.dir = st.dir === 'asc' ? 'desc' : 'asc';
     else { st.key = key; st.dir = 'asc'; }
     this.updateSortIndicators(which);
-    ({table:()=>this.renderTable(), upcoming:()=>this.renderUpcoming(), late:()=>this.renderLate()})[which]();
+    ({table:()=>this.renderTable(), upcoming:()=>this.renderUpcoming(), late:()=>this.renderLate(), report:()=>this.renderReport()})[which]();
   }
 
   updateSortIndicators(which){
-    const id = {table:'clients-table', upcoming:'upcoming-table', late:'late-table'}[which];
+    const id = {table:'clients-table', upcoming:'upcoming-table', late:'late-table', report:'report-table'}[which];
     const st = this.sortState[which];
     document.querySelectorAll('#'+id+' thead th[data-key]').forEach(th=>{
       const base = th.dataset.label || (th.dataset.label = th.textContent.trim());
       th.textContent = base + (th.dataset.key === st.key ? (st.dir === 'asc' ? ' ▲' : ' ▼') : '');
     });
+  }
+
+  reportRows(){
+    const rows = [];
+    this.filtered.forEach(r=>{
+      const ins = r.alloc.filter(i=>i.counted && this.inRange(i.due_date));
+      if (!ins.length) return;
+      const total = ins.reduce((s,i)=>s+i.amount,0);
+      const paid = ins.reduce((s,i)=>s+i.paidPart,0);
+      const late = ins.reduce((s,i)=>s+i.late,0);
+      const future = ins.reduce((s,i)=>s+i.future,0);
+      let state, stateOrder;
+      if (late > 0){ state = 'متأخر'; stateOrder = 3; }
+      else if (future > 0 && paid > 0){ state = 'جاري التحصيل'; stateOrder = 2; }
+      else if (future > 0){ state = 'لسه مجاش ميعاده'; stateOrder = 1; }
+      else { state = 'اتحصَّل بالكامل'; stateOrder = 0; }
+      rows.push({ unit:r.unit, name:r.name, building:r.building, category:r.category, phone:r.phone,
+        count: ins.length, total, paid, late, future, state, stateOrder });
+    });
+    return rows;
+  }
+
+  renderReport(){
+    const show = document.getElementById('f-report-show').value;
+    let rows = this.reportRows();
+    if (show === 'late') rows = rows.filter(x=>x.late>0);
+    if (show === 'clear') rows = rows.filter(x=>x.late<=0);
+    rows = this.sortRows(rows, this.sortState.report);
+    this.lastReport = rows;
+    const sum = k => rows.reduce((s,x)=>s+x[k],0);
+    const lateUnits = rows.filter(x=>x.late>0).length;
+    document.getElementById('report-count').textContent = rows.length
+      ? `${rows.length} وحدة — منها ${lateUnits} وحدة عليها متأخرات` : '';
+    const pill = x => x.stateOrder===3 ? `<span class="pill late">${x.state}</span>`
+      : x.stateOrder===2 ? `<span class="pill partial">${x.state}</span>`
+      : x.stateOrder===1 ? `<span class="pill future">${x.state}</span>`
+      : `<span class="pill done">${x.state}</span>`;
+    document.getElementById('report-tbody').innerHTML = rows.map(x=>`
+      <tr>
+        <td><strong>${esc(x.unit ?? '—')}</strong></td>
+        <td class="name-cell">${esc(x.name)}</td>
+        <td>${esc(x.building ?? '—')}</td>
+        <td>${esc(x.category)}</td>
+        <td>${x.count}</td>
+        <td><strong>${fmtMoney(x.total)}</strong></td>
+        <td class="${x.paid>0?'num-good':''}">${x.paid>0?fmtMoney(x.paid):'—'}</td>
+        <td class="${x.late>0?'num-late':''}">${x.late>0?fmtMoney(x.late):'—'}</td>
+        <td>${x.future>0?fmtMoney(x.future):'—'}</td>
+        <td>${pill(x)}</td>
+        <td>${esc(x.phone ?? '—')}</td>
+      </tr>`).join('') || `<tr><td colspan="11" class="empty">مفيش وحدات عليها أقساط في الفترة دي حسب الفلاتر الحالية</td></tr>`;
+    document.getElementById('report-tfoot').innerHTML = rows.length ? `<tr>
+      <td colspan="4">الإجمالي (${rows.length} وحدة)</td><td>${sum('count')}</td>
+      <td>${fmtMoney(sum('total'))}</td><td>${fmtMoney(sum('paid'))}</td>
+      <td class="${sum('late')>0?'num-late':''}">${sum('late')>0?fmtMoney(sum('late')):'—'}</td>
+      <td>${sum('future')>0?fmtMoney(sum('future')):'—'}</td><td colspan="2"></td></tr>` : '';
+  }
+
+  periodText(){
+    return this.monthFrom === this.monthTo ? `شهر ${monthLabel(this.monthFrom)}`
+      : `من ${monthLabel(this.monthFrom)} إلى ${monthLabel(this.monthTo)}`;
+  }
+
+  printReport(){
+    document.getElementById('print-meta').textContent =
+      `${this.periodText()} — المتأخرات محسوبة لحد ${fmtDate(this.today)} — المدفوع حسب الملف بتاريخ ${fmtDate(this.snapshot)}`;
+    try { window.print(); } catch(e){ alert('الطباعة مش متاحة هنا — افتحي اللوحة في المتصفح مباشرة واضغطي Ctrl+P'); }
+  }
+
+  exportCSV(){
+    const rows = this.lastReport || [];
+    const head = ['الوحدة','اسم العميل','العمارة','الفئة','عدد الأقساط','المطلوب في الفترة','المحصل','المتأخر','لسه مجاش ميعاده','الحالة','الهاتف'];
+    const q = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+    const lines = [
+      ['تقرير تحصيل الأقساط — ' + this.periodText()].map(q).join(','),
+      head.map(q).join(','),
+      ...rows.map(x=>[x.unit, x.name, x.building, x.category, x.count, Math.round(x.total), Math.round(x.paid), Math.round(x.late), Math.round(x.future), x.state, x.phone].map(q).join(',')),
+    ];
+    const sum = k => Math.round(rows.reduce((s,x)=>s+x[k],0));
+    lines.push(['الإجمالي','','','', rows.reduce((s,x)=>s+x.count,0), sum('total'), sum('paid'), sum('late'), sum('future'), '', ''].map(q).join(','));
+    const text = '\ufeff' + lines.join('\r\n');
+    const name = `collection-report_${this.monthFrom}_to_${this.monthTo}.csv`;
+    this.saveFile(name, text);
+  }
+
+  async saveFile(name, text){
+    // inside claude.ai the viewer grants downloads through the platform; elsewhere (GitHub Pages) a normal link works
+    if (window.claude && typeof window.claude.use === 'function'){
+      let dl = null;
+      try { dl = await window.claude.use('downloads'); } catch(e){}
+      if (dl){
+        try { await dl.save({ filename: name, data: text }); }
+        catch(e){ if (e && e.code !== 'declined') alert('التنزيل مش متاح هنا دلوقتي'); }
+        return;
+      }
+    }
+    try {
+      const blob = new Blob([text], {type:'text/csv;charset=utf-8'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+    } catch(e){ alert('التنزيل مش متاح هنا — افتحي اللوحة في المتصفح مباشرة'); }
   }
 
   renderLate(){
@@ -4651,4 +4878,5 @@ class Dashboard {
 const dash = new Dashboard(DATA);
 </script>
 
-</body></html>
+</body>
+</html>
