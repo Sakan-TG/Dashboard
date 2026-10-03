@@ -1,378 +1,4654 @@
-<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard - الأداء المالي | Sakan TG</title>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>لوحة حجوزات التشطيبات</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 <style>
-  :root {
+  /* الفكرة: ملخص عام فوق، ثم بلوك "الفترة المحددة" (مطلوب / اتحصّل / متأخر + ملخص الشهور)، ثم الرسوم، ثم جدول المتأخرات حسب الوحدة، ثم تفاصيل الحجوزات والأقساط القادمة — من اليمين لليسار */
+  :root{
     color-scheme: light;
-    --surface-1:      #fcfcfb;
-    --page-plane:     #f9f9f7;
-    --text-primary:   #0b0b0b;
-    --text-secondary: #52514e;
-    --text-muted:     #898781;
-    --gridline:       #e1e0d9;
-    --border:         rgba(11,11,11,0.10);
-    --series-1: #2a78d6; /* عبدالرحمن */
-    --series-2: #eb6834; /* محمد فتحي */
-    --series-3: #1baf7a; /* ايهاب الشامي */
-    --series-4: #eda100; /* وائل */
-    --good: #0ca30c;
-    --warning: #fab219;
-    --critical: #d03b3b;
+    --bg:#f9f9f7; --surface:#fcfcfb; --text:#0b0b0b; --text-2:#52514e; --muted:#898781;
+    --border:rgba(11,11,11,0.10); --grid:#e1e0d9; --accent:#2a78d6;
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+    --good:#0ca30c; --good-ink:#006300; --warning:#fab219; --warning-ink:#8a5a00; --critical:#d03b3b;
+    --good-bg:rgba(12,163,12,0.12); --critical-bg:rgba(208,59,59,0.12); --warning-bg:rgba(250,178,25,0.18);
+    --future-bg:rgba(42,120,214,0.12); --muted-bg:rgba(137,135,129,0.14);
   }
-  * { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0;
-    background: var(--page-plane);
-    color: var(--text-primary);
-    font-family: 'Cairo', system-ui, -apple-system, "Segoe UI", sans-serif;
-  }
-  body { padding: 24px 16px 64px; }
-  .wrap { max-width: 1180px; margin: 0 auto; }
-
-  header.top { margin-bottom: 24px; }
-  header.top h1 { font-size: 22px; font-weight: 800; margin: 0 0 4px; }
-  header.top .meta { color: var(--text-secondary); font-size: 13px; }
-
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .card {
-    background: var(--surface-1);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px 18px;
-  }
-  .card .label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
-  .card .value { font-size: 26px; font-weight: 800; }
-  .card .value.money::after { content: ' جنيه'; font-size: 13px; font-weight: 600; color: var(--text-muted); }
-  .card.accent-paid .value { color: var(--good); }
-  .card.accent-remaining .value { color: var(--critical); }
-
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1.3fr 1fr;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .panel {
-    background: var(--surface-1);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px 18px;
-  }
-  .panel h2 { font-size: 15px; font-weight: 700; margin: 0 0 12px; }
-  .panel .chart-box { position: relative; min-height: 200px; display: flex; align-items: center; justify-content: center; }
-
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead th {
-    text-align: right; font-weight: 700; color: var(--text-secondary);
-    font-size: 12px; padding: 8px 10px; border-bottom: 1px solid var(--gridline);
-    cursor: pointer; user-select: none; white-space: nowrap;
-  }
-  thead th:hover { color: var(--text-primary); }
-  thead th .arrow { font-size: 10px; opacity: .5; margin-inline-start: 4px; }
-  tbody td { padding: 9px 10px; border-bottom: 1px solid var(--gridline); white-space: nowrap; }
-  tbody tr:hover { background: var(--page-plane); }
-  tbody td.num { font-variant-numeric: tabular-nums; }
-
-  .badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
-  }
-  .badge.paid { background: rgba(12,163,12,0.12); color: var(--good); }
-  .badge.overdue { background: rgba(208,59,59,0.12); color: var(--critical); }
-  .badge.pending { background: rgba(250,178,25,0.18); color: #8a6100; }
-
-  .unit-link { color: var(--series-1); text-decoration: none; font-weight: 700; }
-  .unit-link:hover { text-decoration: underline; }
-
-  .table-wrap { overflow-x: auto; }
-
-  /* simple inline charts (no external library) */
-  .bars { display: flex; flex-direction: column; gap: 14px; padding: 6px 2px; width: 100%; }
-  .bar-row .bar-row-label { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 5px; }
-  .bar-row .bar-row-label .name { font-weight: 700; }
-  .bar-row .bar-row-label .pct { color: var(--text-secondary); }
-  .bar-track { display: flex; height: 16px; border-radius: 5px; overflow: hidden; background: var(--gridline); }
-  .bar-seg.paid-seg { background: var(--good); }
-  .bar-seg.remaining-seg { background: var(--critical); }
-  .chart-legend { display: flex; gap: 16px; justify-content: center; margin-top: 14px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
-  .chart-legend .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-inline-end: 5px; vertical-align: -1px; }
-  .donut-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-  .donut-center-label { font-size: 13px; color: var(--text-secondary); text-anchor: middle; }
-  .donut-center-value { font-size: 22px; font-weight: 800; fill: var(--text-primary); text-anchor: middle; }
-  .chart-fallback { padding: 20px; color: var(--text-muted); font-size: 13px; text-align: center; }
-
-  footer { margin-top: 24px; color: var(--text-muted); font-size: 12px; text-align: center; }
-
-  @media (max-width: 900px) {
-    .cards { grid-template-columns: repeat(2, 1fr); }
-    .grid-2 { grid-template-columns: 1fr; }
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:where(:not([data-theme="light"])) {
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
       color-scheme: dark;
-      --surface-1: #1a1a19;
-      --page-plane: #0d0d0d;
-      --text-primary: #ffffff;
-      --text-secondary: #c3c2b7;
-      --text-muted: #898781;
-      --gridline: #2c2c2a;
-      --border: rgba(255,255,255,0.10);
-      --series-1: #3987e5;
-      --series-2: #d95926;
-      --series-3: #199e70;
-      --series-4: #c98500;
+      --bg:#0d0d0d; --surface:#1a1a19; --text:#ffffff; --text-2:#c3c2b7; --muted:#898781;
+      --border:rgba(255,255,255,0.10); --grid:#2c2c2a; --accent:#3987e5;
+      --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+      --good:#0ca30c; --good-ink:#0ca30c; --warning:#fab219; --warning-ink:#fab219; --critical:#e66767;
+      --good-bg:rgba(12,163,12,0.18); --critical-bg:rgba(208,59,59,0.22); --warning-bg:rgba(250,178,25,0.18);
+      --future-bg:rgba(57,135,229,0.20); --muted-bg:rgba(137,135,129,0.18);
     }
   }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --bg:#0d0d0d; --surface:#1a1a19; --text:#ffffff; --text-2:#c3c2b7; --muted:#898781;
+    --border:rgba(255,255,255,0.10); --grid:#2c2c2a; --accent:#3987e5;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+    --good:#0ca30c; --good-ink:#0ca30c; --warning:#fab219; --warning-ink:#fab219; --critical:#e66767;
+    --good-bg:rgba(12,163,12,0.18); --critical-bg:rgba(208,59,59,0.22); --warning-bg:rgba(250,178,25,0.18);
+    --future-bg:rgba(57,135,229,0.20); --muted-bg:rgba(137,135,129,0.18);
+  }
+
+  *{box-sizing:border-box}
+  body{direction:rtl;font-family:"Cairo","Segoe UI",Tahoma,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:16px;padding-block:20px;line-height:1.55}
+  .wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+
+  .header{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 22px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px}
+  .header h1{font-size:21px;font-weight:800;margin:0 0 4px;text-wrap:balance}
+  .header .org{font-size:13px;color:var(--text-2);font-weight:600}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .badge{display:inline-flex;align-items:center;gap:6px;background:var(--muted-bg);color:var(--text-2);border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:600}
+  .badge .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+  .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 16px}
+  .filters label{font-size:12px;color:var(--muted);display:block;margin-bottom:3px;font-weight:700}
+  .filter-group{display:flex;flex-direction:column;min-width:130px}
+  .filter-group.grow{flex:1;min-width:200px}
+  select,input[type="search"]{font-family:inherit;font-size:13.5px;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 10px}
+  input[type="search"]{width:100%}
+  select:focus,input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .reset-btn{border:1px solid var(--border);background:transparent;color:var(--text-2);border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+  .reset-btn:hover{background:var(--muted-bg)}
+
+  .section-title{font-size:13px;font-weight:800;color:var(--muted);margin:2px 2px -6px;letter-spacing:.3px}
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;min-width:0}
+  .kpi-label{font-size:12.5px;color:var(--muted);font-weight:700}
+  .kpi-value{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kpi-sub{font-size:12px;color:var(--text-2);font-weight:600}
+  .accent-good .kpi-value{color:var(--good-ink)}
+  .accent-critical .kpi-value{color:var(--critical)}
+
+  /* period block */
+  .period{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+  .period-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}
+  .period-head h2{font-size:16px;font-weight:800;margin:0}
+  .period-head .range{font-size:13px;font-weight:700;color:var(--accent)}
+  .period .kpi-card{background:var(--bg)}
+  .period .kpi-card.late{border-color:var(--critical);background:var(--critical-bg)}
+  .period .kpi-card.clear{border-color:var(--good);background:var(--good-bg)}
+  .period .kpi-card.clear .kpi-value{color:var(--good-ink);font-size:20px}
+
+  .chart-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;min-width:0}
+  .card h3{font-size:14.5px;font-weight:700;margin:0 0 2px}
+  .card-sub{font-size:12px;color:var(--muted);margin:0 0 12px;font-weight:600}
+  .chart-box{position:relative;height:290px}
+
+  .table-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:10px}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:820px}
+  thead th{position:sticky;top:0;background:var(--surface);text-align:right;padding:9px 10px;border-bottom:2px solid var(--grid);color:var(--muted);font-weight:700;font-size:11.5px;white-space:nowrap;cursor:pointer;user-select:none}
+  thead th:hover{color:var(--text)}
+  tbody td{padding:8px 10px;border-bottom:1px solid var(--grid);white-space:nowrap;font-variant-numeric:tabular-nums}
+  tbody tr:hover{background:var(--muted-bg)}
+  tfoot td{padding:9px 10px;font-weight:800;border-top:2px solid var(--grid);background:var(--muted-bg);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .name-cell{white-space:normal;max-width:220px}
+  .note-cell{white-space:normal;max-width:260px;color:var(--text-2);font-size:12px}
+  .num-late{color:var(--critical);font-weight:800}
+  .num-good{color:var(--good-ink);font-weight:700}
+  .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700;white-space:nowrap}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .pill.active,.pill.done{background:var(--good-bg);color:var(--good-ink)}
+  .pill.cancelled{background:var(--muted-bg);color:var(--text-2)}
+  .pill.late{background:var(--critical-bg);color:var(--critical)}
+  .pill.partial{background:var(--warning-bg);color:var(--warning-ink)}
+  .pill.future{background:var(--future-bg);color:var(--accent)}
+  .table-note{font-size:12px;color:var(--muted);font-weight:600}
+  .section-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .empty{text-align:center;color:var(--muted);padding:18px !important;white-space:normal !important}
+
+  @media (max-width:640px){
+    .kpi-row{grid-template-columns:repeat(2,1fr)}
+    .chart-row{grid-template-columns:1fr}
+    table{min-width:720px}
+  }
 </style>
-</head>
-<body>
+
 <div class="wrap">
 
-  <header class="top">
-    <h1>📊 Dashboard - الأداء المالي للمشروع</h1>
-    <div class="meta">Sakan TG — بيانات 29 وحدة · آخر تحديث: <span id="lastUpdated"></span></div>
+  <header class="header">
+    <div>
+      <div class="org">التركي جروب — Eltorky Group</div>
+      <h1>لوحة متابعة حجوزات التشطيبات والأقساط</h1>
+      <div class="meta">
+        <span class="badge"><span class="dot"></span> المدفوع حسب الملف بتاريخ <span id="snapshot-date"></span></span>
+        <span class="badge"><span class="dot"></span> المتأخرات محسوبة لحد <span id="today-date"></span></span>
+        <span class="badge" id="cancelled-badge"></span>
+        <span class="badge" id="poa-badge"></span>
+      </div>
+    </div>
   </header>
 
-  <section class="cards">
-    <div class="card">
-      <div class="label">إجمالي قيمة العقود</div>
-      <div class="value money" id="cardTotal">-</div>
+  <section class="filters">
+    <div class="filter-group">
+      <label for="f-status">الحالة</label>
+      <select id="f-status" onchange="dash.applyFilters()">
+        <option value="all">الكل</option>
+        <option value="نشط" selected>نشط</option>
+        <option value="ملغي">ملغي</option>
+      </select>
     </div>
-    <div class="card accent-paid">
-      <div class="label">إجمالي المدفوع</div>
-      <div class="value money" id="cardPaid">-</div>
+    <div class="filter-group">
+      <label for="f-category">الفئة</label>
+      <select id="f-category" onchange="dash.applyFilters()"><option value="all">كل الفئات</option></select>
     </div>
-    <div class="card accent-remaining">
-      <div class="label">الباقي</div>
-      <div class="value money" id="cardRemaining">-</div>
+    <div class="filter-group">
+      <label for="f-building">العمارة</label>
+      <select id="f-building" onchange="dash.applyFilters()"><option value="all">كل العمارات</option></select>
     </div>
-    <div class="card">
-      <div class="label">النسبة المدفوعة</div>
-      <div class="value" id="cardPercent">-</div>
+    <div class="filter-group">
+      <label for="f-month-from">من شهر</label>
+      <select id="f-month-from" onchange="dash.applyFilters()"></select>
+    </div>
+    <div class="filter-group">
+      <label for="f-month-to">إلى شهر</label>
+      <select id="f-month-to" onchange="dash.applyFilters()"></select>
+    </div>
+    <div class="filter-group grow">
+      <label for="f-search">بحث بالاسم أو رقم الوحدة</label>
+      <input type="search" id="f-search" placeholder="اسم العميل أو رقم الوحدة (مثال: 123013)" oninput="dash.applyFilters()">
+    </div>
+    <button class="reset-btn" onclick="dash.resetFilters()">إلغاء الفلاتر</button>
+  </section>
+
+  <div class="section-title">الصورة العامة</div>
+  <section class="kpi-row" id="kpi-row"></section>
+
+  <section class="period">
+    <div class="period-head">
+      <h2>الفترة المحددة</h2>
+      <span class="range" id="period-range"></span>
+    </div>
+    <div class="kpi-row" id="period-kpis"></div>
+    <div>
+      <div class="section-top">
+        <h3 style="margin:0;font-size:14.5px">ملخص الشهور</h3>
+        <span class="table-note">المطلوب والمحصَّل والمتأخر في كل شهر داخل الفترة</span>
+      </div>
+      <div class="table-scroll" style="max-height:420px;overflow-y:auto">
+        <table id="months-table" style="min-width:640px">
+          <thead><tr>
+            <th>الشهر</th><th>المطلوب تحصيله</th><th>اتحصَّل</th><th>متأخر</th><th>لسه مجاش ميعاده</th><th>الحالة</th>
+          </tr></thead>
+          <tbody id="months-tbody"></tbody>
+          <tfoot id="months-tfoot"></tfoot>
+        </table>
+      </div>
     </div>
   </section>
 
-  <section class="grid-2">
-    <div class="panel">
-      <h2>المدفوع مقابل الباقي حسب المشرف</h2>
-      <div class="chart-box" id="supervisorChart"></div>
+  <section class="chart-row">
+    <div class="card">
+      <h3>الأقساط حسب الشهر</h3>
+      <p class="card-sub">كل عمود = المطلوب في الشهر، مقسوم: اتحصَّل / متأخر / لسه مجاش ميعاده</p>
+      <div class="chart-box"><canvas id="chart-schedule"></canvas></div>
     </div>
-    <div class="panel">
-      <h2>حالة الوحدات</h2>
-      <div class="chart-box" id="statusChart"></div>
+    <div class="card">
+      <h3>المحصَّل مقابل المتبقي حسب الفئة</h3>
+      <p class="card-sub">من إجمالي العقود — بالجنيه المصري</p>
+      <div class="chart-box"><canvas id="chart-collection"></canvas></div>
     </div>
   </section>
 
-  <section class="panel">
-    <h2>تفاصيل الوحدات (29)</h2>
-    <div class="table-wrap">
-      <table id="unitsTable">
-        <thead>
-          <tr>
-            <th data-key="unit">رقم الوحدة</th>
-            <th data-key="owner">اسم العميل</th>
-            <th data-key="sup">المشرف</th>
-            <th data-key="total">قيمة العقد</th>
-            <th data-key="paid">المدفوع</th>
-            <th data-key="remaining">الباقي</th>
-            <th data-key="percent">النسبة</th>
-            <th data-key="status">الحالة</th>
-          </tr>
-        </thead>
-        <tbody id="unitsBody"></tbody>
+  <section class="card">
+    <div class="section-top">
+      <h3 style="margin:0">المتأخرات حسب الوحدة</h3>
+      <span class="table-note" id="late-count"></span>
+    </div>
+    <p class="card-sub">الوحدات اللي عليها أقساط ميعادها فات في الفترة المحددة ولسه متدفعتش — مرتبة من الأكبر</p>
+    <div class="table-scroll" style="max-height:460px;overflow-y:auto">
+      <table id="late-table">
+        <thead><tr>
+          <th data-key="unit">الوحدة</th>
+          <th data-key="name">اسم العميل</th>
+          <th data-key="building">العمارة</th>
+          <th data-key="category">الفئة</th>
+          <th data-key="lateCount">عدد الأقساط المتأخرة</th>
+          <th data-key="lateAmount">قيمة المتأخر</th>
+          <th data-key="oldest">أقدم ميعاد متأخر</th>
+          <th data-key="phone">الهاتف</th>
+          <th data-key="note">ملاحظة القسط</th>
+        </tr></thead>
+        <tbody id="late-tbody"></tbody>
+        <tfoot id="late-tfoot"></tfoot>
       </table>
     </div>
   </section>
 
-  <footer>
-    ملخص مالي داخلي — Sakan TG (Eltorky Group). البيانات دي لقطة (snapshot) من نوشن، بتتحدث لما يتم طلب تحديثها.
-  </footer>
+  <section class="chart-row">
+    <div class="card">
+      <h3>توزيع الحجوزات حسب الفئة</h3>
+      <p class="card-sub">عدد العملاء في كل فئة</p>
+      <div class="chart-box"><canvas id="chart-category"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>توزيع العملاء حسب العمارة</h3>
+      <p class="card-sub">أكثر 12 عمارة من حيث عدد الحجوزات</p>
+      <div class="chart-box"><canvas id="chart-building"></canvas></div>
+    </div>
+  </section>
 
+  <section class="card">
+    <div class="section-top">
+      <h3 style="margin:0">تفاصيل الحجوزات</h3>
+      <span class="table-note" id="table-count"></span>
+    </div>
+    <div class="table-scroll" style="max-height:560px;overflow-y:auto">
+      <table id="clients-table" style="min-width:1080px">
+        <thead><tr>
+          <th data-key="name">اسم العميل</th>
+          <th data-key="category">الفئة</th>
+          <th data-key="status">الحالة</th>
+          <th data-key="building">العمارة</th>
+          <th data-key="unit">الوحدة</th>
+          <th data-key="area">المساحة</th>
+          <th data-key="tier">الباقة</th>
+          <th data-key="total_price">السعر الكلي</th>
+          <th data-key="paid">المدفوع</th>
+          <th data-key="remaining">المتبقي</th>
+          <th data-key="lateAmount">المتأخر (في الفترة)</th>
+          <th data-key="handover">تسليم العمارة</th>
+          <th data-key="phone">الهاتف</th>
+        </tr></thead>
+        <tbody id="clients-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-top">
+      <h3 style="margin:0">جدول الأقساط القادمة</h3>
+      <span class="table-note" id="upcoming-count"></span>
+    </div>
+    <p class="card-sub">الأقساط اللي ميعادها من النهارده ورايح، مرتبة حسب أقرب ميعاد</p>
+    <div class="table-scroll" style="max-height:440px;overflow-y:auto">
+      <table id="upcoming-table" style="min-width:760px">
+        <thead><tr>
+          <th data-key="due_date">تاريخ الاستحقاق</th>
+          <th data-key="unit">الوحدة</th>
+          <th data-key="name">اسم العميل</th>
+          <th data-key="seq">رقم الدفعة</th>
+          <th data-key="amount">المبلغ</th>
+          <th data-key="unpaid">المتبقي منه</th>
+          <th data-key="state">الحالة</th>
+        </tr></thead>
+        <tbody id="upcoming-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer style="text-align:center;font-size:12px;color:var(--muted);padding:6px 0 2px;text-wrap:balance">
+    طريقة حساب المتأخر: المبلغ المدفوع لكل عميل (عمود "المدفوع" في الملف) بيتوزع على أقساطه بالترتيب من الأقدم للأحدث، وأي قسط ميعاده فات ولسه ما اتغطاش بالكامل يتحسب متأخر. الحجوزات الملغاة مش داخلة في حسابات الأقساط.
+  </footer>
 </div>
 
 <script>
-const GENERATED_AT = "2026-09-28";
+const DATA = {
+ "records": [
+  {
+   "id": 1,
+   "name": "ماريان مسعود",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 124109,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": 225000.0,
+   "remaining": 0.0,
+   "deposit": 75000.0,
+   "phone": "01273342607",
+   "contract": "تم",
+   "notes": null,
+   "handover": "2026-03-01",
+   "booking_month": "أغسطس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2025-11-05",
+     "note": "دفع"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-02-05",
+     "note": "و دفع  الف 15 و 30 الف و 30 الف"
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2026-05-05",
+     "note": "75 الف في 11/5"
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "name": "محمد صلاح الدين عبد المهيمن",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 244,
+   "unit": 244811,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 340000.0,
+   "paid": 200000.0,
+   "remaining": 25000.0,
+   "deposit": 115000.0,
+   "phone": "00966550104062",
+   "contract": "تم",
+   "notes": "ملحق بتعديلات",
+   "handover": "2027-10-01",
+   "booking_month": "أغسطس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 100000.0,
+     "due_date": "2026-02-01",
+     "note": "دفع"
+    },
+    {
+     "seq": 2,
+     "amount": 100000.0,
+     "due_date": "2026-08-01",
+     "note": "دفع 100 الف في 6/08/2026"
+    },
+    {
+     "seq": 3,
+     "amount": 25000.0,
+     "due_date": "2027-05-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "name": "ليلى الشاعر تبع سامي",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 129,
+   "unit": 129005,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": 225000.0,
+   "remaining": 0.0,
+   "deposit": 75000.0,
+   "phone": "01224435297",
+   "contract": "تم",
+   "notes": null,
+   "handover": "2025-10-01",
+   "booking_month": "أغسطس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2025-11-10",
+     "note": "دفع 25الف + 25 تأمين الوحدة"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-02-10",
+     "note": "دفع 25 الف في 18/4"
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2026-05-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "name": "م . محمد إبراهيم جاد",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 124524,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": 100000.0,
+   "remaining": 150000.0,
+   "deposit": 50000.0,
+   "phone": "01094248421",
+   "contract": "تم",
+   "notes": "الدفعتين التانية مرتبطة تسليم الموقع من المطور  الدفعة الثالثة مرتبطة بتنفيذ التشطيب وتسليمها",
+   "handover": "2026-03-01",
+   "booking_month": "أغسطس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 100000.0,
+     "due_date": "2025-12-01",
+     "note": "دفع"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-02-20",
+     "note": "مرتبط بتسليم المطور"
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2026-05-20",
+     "note": "مرتبط بالتشطيب"
+    }
+   ]
+  },
+  {
+   "id": 5,
+   "name": "مروان هشام محمد عبد الحي",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 122,
+   "unit": 122906,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": 135000.0,
+   "remaining": 90000.0,
+   "deposit": 75000.0,
+   "phone": "01153764567",
+   "contract": "تم",
+   "notes": null,
+   "handover": "2025-10-01",
+   "booking_month": "أغسطس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2026-01-04",
+     "note": "دفع 50 الف"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-04-07",
+     "note": "دفع 75 الف + 10 الف"
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2026-06-07",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 6,
+   "name": "أحمد بدوي منصور",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 129,
+   "unit": 129322,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 320000.0,
+   "paid": 240000.0,
+   "remaining": 5000.0,
+   "deposit": 75000.0,
+   "phone": "01150242424",
+   "contract": "تم",
+   "notes": "تعديل بقيمة 20 الف ج سدد مع الدفعات الثانية والثالثة",
+   "handover": "2025-10-01",
+   "booking_month": "أغسطس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2025-11-20",
+     "note": "دفع"
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-02-20",
+     "note": "دفع 85000"
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2026-05-20",
+     "note": "دفع 30 الف في 28/5+ 50 الف"
+    }
+   ]
+  },
+  {
+   "id": 7,
+   "name": "طارق أحمد عبد العزيز",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 124613,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": 225000.0,
+   "remaining": 0.0,
+   "deposit": 75000.0,
+   "phone": "01080492933",
+   "contract": "تم",
+   "notes": null,
+   "handover": "2026-03-01",
+   "booking_month": "أغسطس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2025-12-20",
+     "note": "دفع"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-03-20",
+     "note": "دفع75 الف في 25/3"
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2026-05-20",
+     "note": "دفع 75 الف في  28/5"
+    }
+   ]
+  },
+  {
+   "id": 8,
+   "name": "محمد صادق محمد عبد المجيد",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 129,
+   "unit": 129610,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": 200000.0,
+   "remaining": 50000.0,
+   "deposit": 50000.0,
+   "phone": "01117766370",
+   "contract": "تم",
+   "notes": null,
+   "handover": "2025-10-01",
+   "booking_month": "أكتوبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 50000.0,
+     "due_date": "2026-01-01",
+     "note": "دفع 50 الف في 11/4"
+    },
+    {
+     "seq": 2,
+     "amount": 100000.0,
+     "due_date": "2026-05-01",
+     "note": "دفع 50 الف في 15/5 - دفع 50 الف في 08/07/2026"
+    },
+    {
+     "seq": 3,
+     "amount": 100000.0,
+     "due_date": "2026-07-01",
+     "note": "دفع 50 الف في 11/09/2026"
+    }
+   ]
+  },
+  {
+   "id": 9,
+   "name": "محمد القاضي",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 124006,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": 175000.0,
+   "remaining": 50000.0,
+   "deposit": 75000.0,
+   "phone": "+966549580447",
+   "contract": "تم",
+   "notes": "تعديل قيمة العقد ليصبح 350",
+   "handover": "2026-03-01",
+   "booking_month": "سبتمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2025-12-07",
+     "note": "دفع"
+    },
+    {
+     "seq": 2,
+     "amount": 100000.0,
+     "due_date": "2026-03-07",
+     "note": "دفع 100 الف"
+    },
+    {
+     "seq": 3,
+     "amount": 100000.0,
+     "due_date": "2025-10-15",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 10,
+   "name": "أحمد عبد السلام",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 124804,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 305000.0,
+   "paid": 205000.0,
+   "remaining": 0.0,
+   "deposit": 100000.0,
+   "phone": "01224402708",
+   "contract": "تم",
+   "notes": null,
+   "handover": "2026-03-01",
+   "booking_month": "أكتوبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 63000.0,
+     "due_date": "2026-01-01",
+     "note": "دفع 100 لف في 09/5"
+    },
+    {
+     "seq": 2,
+     "amount": 63000.0,
+     "due_date": "2026-04-01",
+     "note": "دفع 90الف في 21/9"
+    },
+    {
+     "seq": 3,
+     "amount": 63000.0,
+     "due_date": "2026-07-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 11,
+   "name": "محمد رضا",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 129,
+   "unit": 129401,
+   "area": "30م",
+   "tier": "الفضية",
+   "total_price": 180000.0,
+   "paid": 131500.0,
+   "remaining": 3500.0,
+   "deposit": 45000.0,
+   "phone": "01067684313",
+   "contract": "تم",
+   "notes": "استكمال  الفريون  3500 ج",
+   "handover": "2025-10-01",
+   "booking_month": "نوفمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 20000.0,
+     "due_date": "2026-03-15",
+     "note": "دفع 20 الف"
+    },
+    {
+     "seq": 2,
+     "amount": 65000.0,
+     "due_date": "2026-05-15",
+     "note": "دفع 57500 في 28/5"
+    },
+    {
+     "seq": 3,
+     "amount": 57000.0,
+     "due_date": "2026-07-15",
+     "note": "دفع 54 الف في 09/08/2026"
+    }
+   ]
+  },
+  {
+   "id": 12,
+   "name": "د حاتم عبد المنصف احمد سرحان",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 122,
+   "unit": 122916,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 280000.0,
+   "paid": 125000.0,
+   "remaining": 55000.0,
+   "deposit": 100000.0,
+   "phone": null,
+   "contract": "تم",
+   "notes": "خصم 25 الف من القسط الثالث  و يسدد الباقي في 01/10/2026",
+   "handover": "2025-10-01",
+   "booking_month": "نوفمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 90000.0,
+     "due_date": "2026-02-10",
+     "note": "دفع 50 الف في 16/5 و 50 الف في 7/6"
+    },
+    {
+     "seq": 2,
+     "amount": 90000.0,
+     "due_date": "2026-10-01",
+     "note": "25 الف تامين الوحدة"
+    }
+   ]
+  },
+  {
+   "id": 13,
+   "name": "أمال أبو العنين حسن",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123518,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 340000.0,
+   "paid": 50000.0,
+   "remaining": 205000.0,
+   "deposit": 85000.0,
+   "phone": "01024492091",
+   "contract": "تم",
+   "notes": "التوكيلات بأسم مروة البرنس  & هدير & محمد البرنس",
+   "handover": "2025-12-01",
+   "booking_month": "نوفمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 85000.0,
+     "due_date": "2026-05-09",
+     "note": "دفعت 50 الف في 15/5"
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-08-09",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2026-11-09",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 14,
+   "name": "هاجر أحمد",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 136,
+   "unit": 136916,
+   "area": "60",
+   "tier": "الفضية",
+   "total_price": 290000.0,
+   "paid": 100000.0,
+   "remaining": 140000.0,
+   "deposit": 50000.0,
+   "phone": null,
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ديسمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2026-02-02",
+     "note": "دفع 75 الف"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-05-02",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 65000.0,
+     "due_date": "2026-08-02",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 15,
+   "name": "محمد محمود كامل جنيدي",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 124809,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 290000.0,
+   "paid": 115000.0,
+   "remaining": 100000.0,
+   "deposit": 75000.0,
+   "phone": "01025356708",
+   "contract": "تم",
+   "notes": null,
+   "handover": "2025-09-10",
+   "booking_month": "ديسمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2026-02-02",
+     "note": "دفع 40 الف + 35000"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-05-02",
+     "note": "دفع 40 الف في 28/5"
+    },
+    {
+     "seq": 3,
+     "amount": 65000.0,
+     "due_date": "2026-08-02",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 16,
+   "name": "علي محمد علي مصطفى",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 136,
+   "unit": 136107,
+   "area": "82م",
+   "tier": "الفضية",
+   "total_price": 410000.0,
+   "paid": 100000.0,
+   "remaining": 210000.0,
+   "deposit": 100000.0,
+   "phone": "966540884588",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ديسمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 100000.0,
+     "due_date": "2026-03-01",
+     "note": "دفع في 17/3"
+    },
+    {
+     "seq": 2,
+     "amount": 100000.0,
+     "due_date": "2026-07-01",
+     "note": "تأجيل لحين الاستلام من المطور"
+    },
+    {
+     "seq": 3,
+     "amount": 110000.0,
+     "due_date": "2026-09-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 17,
+   "name": "عوض قاسم  زيدان يونس بكار",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 129,
+   "unit": 129804,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": 225000.0,
+   "remaining": 0.0,
+   "deposit": 75000.0,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": "2025-12-25",
+   "booking_month": "ديسمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2026-03-18",
+     "note": "دفع في 18/4 (محول من وحده الفسخ )"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-06-18",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2026-09-18",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 18,
+   "name": "طارق زكي",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 136,
+   "unit": 136216,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": 150000.0,
+   "remaining": 100000.0,
+   "deposit": 50000.0,
+   "phone": "01556379122",
+   "contract": "-",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ديسمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2026-02-16",
+     "note": "دفع 50 الف"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-05-16",
+     "note": "دفع 100 الف في 17/6"
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2026-08-16",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 19,
+   "name": "مصطفى محمد اسماعيل عبد الغفار",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 129,
+   "unit": 129505,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 900000.0,
+   "paid": 450000.0,
+   "remaining": 225000.0,
+   "deposit": 225000.0,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": "2025-12-25",
+   "booking_month": "ديسمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 225000.0,
+     "due_date": "2026-03-01",
+     "note": "سدد 100 الف في 10/3  و 50   الف +50 الف في 6/5/2026 +25 الف في 28/5"
+    },
+    {
+     "seq": 2,
+     "amount": 225000.0,
+     "due_date": "2026-07-01",
+     "note": "30000+20000+50 الف ف 29/7+ 100 الف في 29/06+25 الف تسوية"
+    },
+    {
+     "seq": 3,
+     "amount": 225000.0,
+     "due_date": "2026-10-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 20,
+   "name": "مصطفى محمد اسماعيل عبد الغفار",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 129,
+   "unit": 129504,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": null,
+   "paid": null,
+   "remaining": null,
+   "deposit": null,
+   "phone": "01099555860",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ديسمبر",
+   "installments": []
+  },
+  {
+   "id": 21,
+   "name": "اسلام محمد فتحي علي اسماعيل",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 121,
+   "unit": 121908,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": null,
+   "paid": null,
+   "remaining": null,
+   "deposit": null,
+   "phone": null,
+   "contract": null,
+   "notes": "شيك التامين باسم وليد عبد الحميد",
+   "handover": null,
+   "booking_month": "ديسمبر",
+   "installments": []
+  },
+  {
+   "id": 22,
+   "name": "سمر محمود منصور",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123616,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": 100000.0,
+   "remaining": 200000.0,
+   "deposit": 0.0,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "ديسمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": null,
+     "note": "دفعت 25 الف في 10/3"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-04-05",
+     "note": "دفعت 25 الف لافي 28/5"
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2026-07-05",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 75000.0,
+     "due_date": "2026-10-05",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 23,
+   "name": "عصام يحيى محمود البكري+ محمد رشدي عمارة",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 7,
+   "unit": "7-605",
+   "area": "68م",
+   "tier": "الفضية",
+   "total_price": 315000.0,
+   "paid": 112500.0,
+   "remaining": 123750.0,
+   "deposit": 78750.0,
+   "phone": "01050700014",
+   "contract": "تم",
+   "notes": "01006410105",
+   "handover": null,
+   "booking_month": "ديسمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 78750.0,
+     "due_date": "2026-03-30",
+     "note": "دفع 78750في 13/5/2026"
+    },
+    {
+     "seq": 2,
+     "amount": 78750.0,
+     "due_date": "2026-06-30",
+     "note": "تسوية 33750"
+    },
+    {
+     "seq": 3,
+     "amount": 78750.0,
+     "due_date": "2026-09-30",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 24,
+   "name": "ايمان محمد السيد نافع",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 124718,
+   "area": "60 م",
+   "tier": "الفضية",
+   "total_price": 290000.0,
+   "paid": 150000.0,
+   "remaining": 75000.0,
+   "deposit": 65000.0,
+   "phone": "01000750130",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "دسمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2026-04-01",
+     "note": "دفع 75 الف"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-07-01",
+     "note": "50 الف في 1/8 + 25 في 4/8"
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2026-10-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 25,
+   "name": "معتز محمود & تغريد & مصطفي & دينا",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 124321,
+   "area": "60 م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": 200000.0,
+   "remaining": 50000.0,
+   "deposit": 50000.0,
+   "phone": "01282266103",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ديسمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2026-03-21",
+     "note": "دفع 100 الف"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-06-21",
+     "note": "دفع 100 الف 28/9"
+    },
+    {
+     "seq": 3,
+     "amount": 50000.0,
+     "due_date": "2026-09-21",
+     "note": "تسدد قبل الاستلام  بـ 10 ايام"
+    }
+   ]
+  },
+  {
+   "id": 26,
+   "name": "محمد طاهر محمد لطفي عبد السميع",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123417,
+   "area": "60 م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": 150000.0,
+   "remaining": 75000.0,
+   "deposit": 75000.0,
+   "phone": "01225111535",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يناير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2026-05-01",
+     "note": "دفع 75 الف ف 06/05/2026"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-08-01",
+     "note": "دفع في 16/08/2026"
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2026-11-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 27,
+   "name": "محمد عبد الرازق مصطفي علي سالم",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 223,
+   "unit": 223208,
+   "area": "30 م",
+   "tier": "الفضية",
+   "total_price": 185000.0,
+   "paid": 74000.0,
+   "remaining": 74000.0,
+   "deposit": 37000.0,
+   "phone": "01007105877",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يناير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 37000.0,
+     "due_date": "2026-04-10",
+     "note": "دفع في 15/4"
+    },
+    {
+     "seq": 2,
+     "amount": 37000.0,
+     "due_date": "2026-07-10",
+     "note": "7 الاف  \"تسوية في 6/7 وتم سداد 30 الف في 9/72026"
+    },
+    {
+     "seq": 3,
+     "amount": 37000.0,
+     "due_date": "2026-10-10",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 37000.0,
+     "due_date": "2027-01-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 28,
+   "name": "حسن محمد حسن جاد عمر",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 223,
+   "unit": 223201,
+   "area": "60 م",
+   "tier": "الفضية",
+   "total_price": 340000.0,
+   "paid": 136000.0,
+   "remaining": 136000.0,
+   "deposit": 68000.0,
+   "phone": "01227727702",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يناير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 68000.0,
+     "due_date": "2026-04-10",
+     "note": "دفع في 15/4"
+    },
+    {
+     "seq": 2,
+     "amount": 68000.0,
+     "due_date": "2026-07-10",
+     "note": "8 الاف  \"تسوية في 6/7 وتم السداد 60 الف  في 27/07/2026"
+    },
+    {
+     "seq": 3,
+     "amount": 68000.0,
+     "due_date": "2026-10-10",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 68000.0,
+     "due_date": "2027-01-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 29,
+   "name": "نادية سعيد ابراهيم حسن",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 124803,
+   "area": "60 م",
+   "tier": "الفضية",
+   "total_price": 305000.0,
+   "paid": 140000.0,
+   "remaining": 65000.0,
+   "deposit": 100000.0,
+   "phone": null,
+   "contract": "تم",
+   "notes": "باقي التوقيع",
+   "handover": null,
+   "booking_month": "يناير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 65000.0,
+     "due_date": "2026-06-10",
+     "note": "دفع 100 الف في 11/5"
+    },
+    {
+     "seq": 2,
+     "amount": 70000.0,
+     "due_date": "2026-08-10",
+     "note": "دفعت 40 في 09/08"
+    },
+    {
+     "seq": 3,
+     "amount": 70000.0,
+     "due_date": "2026-10-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 30,
+   "name": "فادي شكري جميل & محمد عمرو احمد",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 129,
+   "unit": 129001,
+   "area": "30 م",
+   "tier": null,
+   "total_price": 160000.0,
+   "paid": 110000.0,
+   "remaining": 0.0,
+   "deposit": 50000.0,
+   "phone": "-",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يناير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 55000.0,
+     "due_date": "2026-03-10",
+     "note": "سدد في 10/3"
+    },
+    {
+     "seq": 2,
+     "amount": 55000.0,
+     "due_date": "2026-06-10",
+     "note": "سدد في 22/6/2026"
+    }
+   ]
+  },
+  {
+   "id": 31,
+   "name": "محمد محمد عوض النجار",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 122,
+   "unit": 122921,
+   "area": "60 م",
+   "tier": "الفضية",
+   "total_price": 330000.0,
+   "paid": 247500.0,
+   "remaining": 0.0,
+   "deposit": 82500.0,
+   "phone": "01224364363",
+   "contract": "تم",
+   "notes": "خالص",
+   "handover": null,
+   "booking_month": "يناير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 82500.0,
+     "due_date": "2026-04-01",
+     "note": "دفع"
+    },
+    {
+     "seq": 2,
+     "amount": 82500.0,
+     "due_date": "2026-07-01",
+     "note": "سدد في 1/7/2026"
+    },
+    {
+     "seq": 3,
+     "amount": 82500.0,
+     "due_date": "2026-10-01",
+     "note": "في 14/7 سدد 52.500 بعد خصم 30 الف"
+    }
+   ]
+  },
+  {
+   "id": 32,
+   "name": "عبد الرحمن احمد عبد الرحمن",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 128,
+   "unit": 128408,
+   "area": "60 م",
+   "tier": null,
+   "total_price": 325000.0,
+   "paid": 130000.0,
+   "remaining": 130000.0,
+   "deposit": 65000.0,
+   "phone": "01006207646",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يناير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 65000.0,
+     "due_date": "2026-04-10",
+     "note": "دفع في 18/04"
+    },
+    {
+     "seq": 2,
+     "amount": 65000.0,
+     "due_date": "2026-08-10",
+     "note": "دفع 65 الف في 13/08"
+    },
+    {
+     "seq": 3,
+     "amount": 65000.0,
+     "due_date": "2026-10-10",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 65000.0,
+     "due_date": "2027-01-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 33,
+   "name": "كريم محمد حسنين",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 128,
+   "unit": 128124,
+   "area": "60 م",
+   "tier": "الفضية",
+   "total_price": 330000.0,
+   "paid": 160000.0,
+   "remaining": 170000.0,
+   "deposit": 0.0,
+   "phone": "01221113617",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يناير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 80000.0,
+     "due_date": "2026-03-01",
+     "note": "دفع"
+    },
+    {
+     "seq": 2,
+     "amount": 80000.0,
+     "due_date": "2026-06-01",
+     "note": "سدد في 23/6"
+    },
+    {
+     "seq": 3,
+     "amount": 80000.0,
+     "due_date": "2026-09-01",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 80000.0,
+     "due_date": "2026-12-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 34,
+   "name": "اسلام سليمان فتوح السيد",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 129,
+   "unit": 129426,
+   "area": "30 م",
+   "tier": "الفضية",
+   "total_price": 200000.0,
+   "paid": 90000.0,
+   "remaining": 85000.0,
+   "deposit": 25000.0,
+   "phone": "01228991776",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يناير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 45000.0,
+     "due_date": "2026-04-01",
+     "note": "دفع 45  الف"
+    },
+    {
+     "seq": 2,
+     "amount": 45000.0,
+     "due_date": "2026-07-01",
+     "note": "45 الف في 1/7"
+    },
+    {
+     "seq": 3,
+     "amount": 45000.0,
+     "due_date": "2026-10-01",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 40000.0,
+     "due_date": "2027-01-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 35,
+   "name": "احمد محمد اشرف محمد كمال نبيه الدالي",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 223,
+   "unit": 223402,
+   "area": "60 م",
+   "tier": "الفضية",
+   "total_price": 312000.0,
+   "paid": 124800.0,
+   "remaining": 124800.0,
+   "deposit": 62400.0,
+   "phone": "01007804654",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يناير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 62400.0,
+     "due_date": null,
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 62400.0,
+     "due_date": "2026-07-28",
+     "note": "دفع في 27/07/2026"
+    },
+    {
+     "seq": 3,
+     "amount": 62400.0,
+     "due_date": "2026-10-28",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 62400.0,
+     "due_date": "2027-01-28",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 36,
+   "name": "همت على مصطفى على البشبيشى & هانم  علي",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 121,
+   "unit": 121022,
+   "area": "90م",
+   "tier": "الفضيه",
+   "total_price": 450000.0,
+   "paid": 225000.0,
+   "remaining": 112500.0,
+   "deposit": 112500.0,
+   "phone": "01004303473",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "فبراير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 112500.0,
+     "due_date": "2026-05-10",
+     "note": "دفعت"
+    },
+    {
+     "seq": 2,
+     "amount": 112500.0,
+     "due_date": "2026-08-10",
+     "note": "دفعت في 10/08"
+    },
+    {
+     "seq": 3,
+     "amount": 112500.0,
+     "due_date": "2026-11-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 37,
+   "name": "وائل عبد القادر ابراهيم & اسامة طارق سليمان",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 122,
+   "unit": 122614,
+   "area": "60 م",
+   "tier": "الفضية",
+   "total_price": 340000.0,
+   "paid": 65000.0,
+   "remaining": 255000.0,
+   "deposit": 20000.0,
+   "phone": "01099436359",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "فبراير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 65000.0,
+     "due_date": "2026-03-10",
+     "note": "دفع"
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-06-10",
+     "note": "تأجيل القسط"
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2027-02-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 38,
+   "name": "احمد نصر عبد البديع احمد",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123323,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 250000.0,
+   "paid": null,
+   "remaining": 50000.0,
+   "deposit": 200000.0,
+   "phone": "01278441824",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "فبراير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 50000.0,
+     "due_date": "2026-12-15",
+     "note": "تم تسوية بقيمة 50 الف"
+    }
+   ]
+  },
+  {
+   "id": 39,
+   "name": "بلال ابراهيم محمد حسن",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 121,
+   "unit": 121103,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 340000.0,
+   "paid": 170000.0,
+   "remaining": 170000.0,
+   "deposit": 0.0,
+   "phone": "01012221626",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "فبراير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 85000.0,
+     "due_date": "2026-03-22",
+     "note": "دفع"
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-06-22",
+     "note": "دفع 85 الف في 9/5/2026"
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2026-10-22",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 85000.0,
+     "due_date": "2027-02-22",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 40,
+   "name": "السيد مختار  ( محمد خالد )",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 131,
+   "unit": 131215,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 340000.0,
+   "paid": 136000.0,
+   "remaining": 136000.0,
+   "deposit": 68000.0,
+   "phone": "01555942140",
+   "contract": null,
+   "notes": "اخد العقد للتوقيع ويرجعه تاني",
+   "handover": null,
+   "booking_month": "مارس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 68000.0,
+     "due_date": "2026-06-10",
+     "note": "13/8دفع 68 الف في"
+    },
+    {
+     "seq": 2,
+     "amount": 68000.0,
+     "due_date": "2026-09-10",
+     "note": "دفع 68 الف في 13/8"
+    },
+    {
+     "seq": 3,
+     "amount": 68000.0,
+     "due_date": "2026-12-10",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 68000.0,
+     "due_date": "2027-03-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 41,
+   "name": "محمد حسنين محمد اللباني",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 122,
+   "unit": 122724,
+   "area": "90 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 620000.0,
+   "paid": 310000.0,
+   "remaining": 155000.0,
+   "deposit": 155000.0,
+   "phone": "01002413674",
+   "contract": "تم",
+   "notes": "العقد معدل (تعديل داخل البنود)",
+   "handover": null,
+   "booking_month": "مارس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 155000.0,
+     "due_date": "2026-06-01",
+     "note": "دفع 310 الف في 28/5"
+    },
+    {
+     "seq": 2,
+     "amount": 155000.0,
+     "due_date": "2026-09-01",
+     "note": "دفع 310 الف في 15/9"
+    },
+    {
+     "seq": 3,
+     "amount": 155000.0,
+     "due_date": "2026-12-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 42,
+   "name": "تامر حسنين محمد اللباني",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 122,
+   "unit": 122824,
+   "area": "90 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 620000.0,
+   "paid": 310000.0,
+   "remaining": 155000.0,
+   "deposit": 155000.0,
+   "phone": "01003861927",
+   "contract": "تم",
+   "notes": "العقد معدل (تعديل داخل البنود)",
+   "handover": null,
+   "booking_month": "مارس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 155000.0,
+     "due_date": "2026-06-01",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 155000.0,
+     "due_date": "2026-09-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 155000.0,
+     "due_date": "2026-12-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 43,
+   "name": "بلال ابراهيم محمد حسن  /  هبه علي احمد",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 218,
+   "unit": 218926,
+   "area": "30 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 180000.0,
+   "paid": null,
+   "remaining": 0.0,
+   "deposit": 180000.0,
+   "phone": "01012221626",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "مارس",
+   "installments": []
+  },
+  {
+   "id": 44,
+   "name": "محمد حسين محمود حسين",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123218,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 340000.0,
+   "paid": 85000.0,
+   "remaining": 170000.0,
+   "deposit": 85000.0,
+   "phone": "01201005910",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "فبراير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 85000.0,
+     "due_date": "2026-06-01",
+     "note": "دفع 85 الف في 28/5"
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-10-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2027-01-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 45,
+   "name": "اسماء السنوسي محمد علام",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 124208,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 345000.0,
+   "paid": 172500.0,
+   "remaining": 172500.0,
+   "deposit": 0.0,
+   "phone": "01091400131",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "مارس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 86250.0,
+     "due_date": "2026-04-25",
+     "note": "سددت في  26/4"
+    },
+    {
+     "seq": 2,
+     "amount": 86250.0,
+     "due_date": "2026-08-25",
+     "note": "دفعت 86250 في 11/08/2026"
+    },
+    {
+     "seq": 3,
+     "amount": 86250.0,
+     "due_date": "2026-11-25",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 86250.0,
+     "due_date": "2027-02-25",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 46,
+   "name": "فدوي ابراهيم احمد ابراهيم",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123325,
+   "area": "90 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 500000.0,
+   "paid": 125000.0,
+   "remaining": 250000.0,
+   "deposit": 125000.0,
+   "phone": "01276369328",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 125000.0,
+     "due_date": "2026-08-01",
+     "note": "دفعت في 26/08"
+    },
+    {
+     "seq": 2,
+     "amount": 125000.0,
+     "due_date": "2026-11-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 125000.0,
+     "due_date": "2027-02-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 47,
+   "name": "احمد فوزي احمد الدمرداش",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123425,
+   "area": "90 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 500000.0,
+   "paid": 125000.0,
+   "remaining": 250000.0,
+   "deposit": 125000.0,
+   "phone": "01003140369",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 125000.0,
+     "due_date": "2026-08-01",
+     "note": "دفع في 26/08/2026"
+    },
+    {
+     "seq": 2,
+     "amount": 125000.0,
+     "due_date": "2026-11-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 125000.0,
+     "due_date": "2027-02-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 48,
+   "name": "شادي عادل",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123913,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 270000.0,
+   "paid": 140000.0,
+   "remaining": 10000.0,
+   "deposit": 120000.0,
+   "phone": "01096708041",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": []
+  },
+  {
+   "id": 49,
+   "name": "وائل عوض فريد سوريال عوض",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123023,
+   "area": "60م",
+   "tier": "الفضية الجديدة",
+   "total_price": 345000.0,
+   "paid": 85000.0,
+   "remaining": 170000.0,
+   "deposit": 90000.0,
+   "phone": "01282326086",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 85000.0,
+     "due_date": "2026-07-01",
+     "note": "تم تسويه القسط"
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-10-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2027-01-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 50,
+   "name": "محمد فاروق محمد عبد الرحيم",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123115,
+   "area": "60م",
+   "tier": "الفضية الجديدة",
+   "total_price": 345000.0,
+   "paid": null,
+   "remaining": 255000.0,
+   "deposit": 90000.0,
+   "phone": "01282326086",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 85000.0,
+     "due_date": "2026-07-01",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-10-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2027-01-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 51,
+   "name": "عبد الجواد عبد الله جوده عبد الله",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 129,
+   "unit": 129909,
+   "area": "60م",
+   "tier": "الفضية الجديدة",
+   "total_price": 340000.0,
+   "paid": 80000.0,
+   "remaining": 175000.0,
+   "deposit": 85000.0,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 85000.0,
+     "due_date": "2026-07-04",
+     "note": "دفع 80 الف في 9/7/2026"
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-10-04",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2027-01-04",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 52,
+   "name": "سعاد ابراهيم خميس حسن السيد",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 124024,
+   "area": "60 م",
+   "tier": "باقة متكاملة",
+   "total_price": 345000.0,
+   "paid": null,
+   "remaining": 218500.0,
+   "deposit": 126500.0,
+   "phone": "01157024532",
+   "contract": null,
+   "notes": "85000",
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 50000.0,
+     "due_date": "2026-10-30",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 106250.0,
+     "due_date": "2027-02-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 106250.0,
+     "due_date": "2027-05-01",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 106250.0,
+     "due_date": "2027-08-01",
+     "note": null
+    },
+    {
+     "seq": 5,
+     "amount": 106250.0,
+     "due_date": "2027-11-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 53,
+   "name": "ايمن يوسف عوض محمد خنيسه",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123923,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 345000.0,
+   "paid": 85000.0,
+   "remaining": 170000.0,
+   "deposit": 90000.0,
+   "phone": "01004459470",
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 85000.0,
+     "due_date": "2026-07-12",
+     "note": "دفع 85 الف في 28/09"
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-10-12",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2027-01-12",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 54,
+   "name": "رامي عبد الفتاح عبد الفتاح زيد",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123011,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 400000.0,
+   "paid": 65000.0,
+   "remaining": 195000.0,
+   "deposit": 140000.0,
+   "phone": "966546000878",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 65000.0,
+     "due_date": "2026-08-20",
+     "note": "دفع 65 الف في 08/09/2026"
+    },
+    {
+     "seq": 2,
+     "amount": 65000.0,
+     "due_date": "2026-10-20",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 65000.0,
+     "due_date": "2027-01-20",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 65000.0,
+     "due_date": "2027-04-20",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 55,
+   "name": "محمد جمال احمد محمد علي",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123420,
+   "area": "82 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 515000.0,
+   "paid": null,
+   "remaining": 386250.0,
+   "deposit": 128750.0,
+   "phone": "01092328535",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 128750.0,
+     "due_date": "2026-07-15",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 128750.0,
+     "due_date": "2026-10-15",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 128750.0,
+     "due_date": "2027-01-15",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 56,
+   "name": "محمد مصطفي عطيه عبده السعران",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123204,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 380000.0,
+   "paid": null,
+   "remaining": 270000.0,
+   "deposit": 110000.0,
+   "phone": "01144441183",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 110000.0,
+     "due_date": "2026-12-01",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 80000.0,
+     "due_date": "2026-10-30",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 80000.0,
+     "due_date": "2027-01-30",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 57,
+   "name": "مروة حمدى احمد بندارى",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123101,
+   "area": "30 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 205000.0,
+   "paid": null,
+   "remaining": 154000.0,
+   "deposit": 51000.0,
+   "phone": "01150536735",
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 38500.0,
+     "due_date": "2026-07-20",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 38500.0,
+     "due_date": "2026-10-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 38500.0,
+     "due_date": "2027-01-20",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 38500.0,
+     "due_date": "2027-04-20",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 58,
+   "name": "خالد بهاء الدين رزق عبد الجواد",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123618,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 345000.0,
+   "paid": null,
+   "remaining": 255000.0,
+   "deposit": 90000.0,
+   "phone": "01111020931",
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": []
+  },
+  {
+   "id": 59,
+   "name": "حسين محمد حجازي محمود",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123408,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 325000.0,
+   "paid": 70000.0,
+   "remaining": 70000.0,
+   "deposit": 185000.0,
+   "phone": "01061970688",
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 70000.0,
+     "due_date": "2026-05-05",
+     "note": "دفع  70 الف في 28/5"
+    },
+    {
+     "seq": 2,
+     "amount": 70000.0,
+     "due_date": "2026-05-25",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 60,
+   "name": "ابراهيم حسن ابراهيم السيد",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123718,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 380000.0,
+   "paid": 82000.0,
+   "remaining": 163000.0,
+   "deposit": 135000.0,
+   "phone": "01008670598",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 82000.0,
+     "due_date": "2026-07-27",
+     "note": "دفع في 27/07/2026"
+    },
+    {
+     "seq": 2,
+     "amount": 81500.0,
+     "due_date": "2026-10-27",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 81500.0,
+     "due_date": "2027-01-27",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 61,
+   "name": "شركة ( التركي جروب )",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123719,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 350000.0,
+   "paid": null,
+   "remaining": 0.0,
+   "deposit": 350000.0,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": []
+  },
+  {
+   "id": 62,
+   "name": "نادر السيد ابراهيم احمد الاحول",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123821,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 370000.0,
+   "paid": null,
+   "remaining": 240000.0,
+   "deposit": 130000.0,
+   "phone": "01026830180",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 60000.0,
+     "due_date": null,
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 60000.0,
+     "due_date": "2026-10-28",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 60000.0,
+     "due_date": "2027-01-28",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 60000.0,
+     "due_date": "2027-04-28",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 63,
+   "name": "احمد مبروك موسي شعير",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 129,
+   "unit": 129319,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 350000.0,
+   "paid": null,
+   "remaining": 225000.0,
+   "deposit": 125000.0,
+   "phone": "01551700375",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 56250.0,
+     "due_date": null,
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 56250.0,
+     "due_date": "2026-10-28",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 56250.0,
+     "due_date": "2027-01-28",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 56250.0,
+     "due_date": "2027-04-28",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 64,
+   "name": "عبد الناصر عبد الرازق طغيان عبدالله",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123418,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 320000.0,
+   "paid": null,
+   "remaining": 320000.0,
+   "deposit": null,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "",
+   "installments": []
+  },
+  {
+   "id": 65,
+   "name": "احمد محمد نصر الدين امين",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123608,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 340000.0,
+   "paid": 85000.0,
+   "remaining": 170000.0,
+   "deposit": 85000.0,
+   "phone": "01068670076",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يونيو",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 85000.0,
+     "due_date": "2026-09-01",
+     "note": "دفع 85 الف في 15/9"
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-12-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2027-03-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 66,
+   "name": "خالد علي عبد العاطي عبد القادر",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123508,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 340000.0,
+   "paid": 85000.0,
+   "remaining": 170000.0,
+   "deposit": 85000.0,
+   "phone": "01223667164",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يونيو",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 85000.0,
+     "due_date": "2026-09-01",
+     "note": "دفع 85 الف في 15/9"
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-12-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2027-03-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 67,
+   "name": "محمد فريد فؤاد علي الديب",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 136,
+   "unit": 136716,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 335000.0,
+   "paid": 75000.0,
+   "remaining": 150000.0,
+   "deposit": 110000.0,
+   "phone": "01550078745",
+   "contract": "تم",
+   "notes": "الغفرة 70 الف دفع منها 35 الف والباقي مع الاستلام",
+   "handover": null,
+   "booking_month": "يونيو",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2026-09-11",
+     "note": "دفع 75000 في 20/09/2026"
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-12-11",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2027-03-11",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 68,
+   "name": "احمد محمد عمر كحله",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 128,
+   "unit": 128811,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 370000.0,
+   "paid": null,
+   "remaining": 260000.0,
+   "deposit": 110000.0,
+   "phone": "01552255062",
+   "contract": "تم",
+   "notes": "السعر شامل الغفره  و  التعديل",
+   "handover": null,
+   "booking_month": "يونيو",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 135000.0,
+     "due_date": "2026-10-01",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 135000.0,
+     "due_date": "2027-01-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 135000.0,
+     "due_date": "2027-04-01",
+     "note": "-"
+    }
+   ]
+  },
+  {
+   "id": 69,
+   "name": "احمد محمد عمر كحله",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 136,
+   "unit": 136814,
+   "area": "30 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 255000.0,
+   "paid": null,
+   "remaining": 145000.0,
+   "deposit": 110000.0,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "يونيو",
+   "installments": []
+  },
+  {
+   "id": 70,
+   "name": "جابر عبد الرحيم علي محمود & التركي جروب",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 123,
+   "unit": 123612,
+   "area": "90 م",
+   "tier": "باقة متكاملة  3 غرف",
+   "total_price": 582500.0,
+   "paid": 0.0,
+   "remaining": 0.0,
+   "deposit": 582500.0,
+   "phone": null,
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يوليو",
+   "installments": []
+  },
+  {
+   "id": 71,
+   "name": "اسلام محمد عبد الرازق عبد القادر",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 128,
+   "unit": 128726,
+   "area": "30",
+   "tier": "باقة متكاملة",
+   "total_price": 410000.0,
+   "paid": null,
+   "remaining": 375800.0,
+   "deposit": 34200.0,
+   "phone": "01274997711",
+   "contract": "تم",
+   "notes": "شامل الغفرة",
+   "handover": null,
+   "booking_month": "اغسطس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 110500.0,
+     "due_date": "2027-01-01",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 110500.0,
+     "due_date": "2027-04-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 110500.0,
+     "due_date": "2027-07-01",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 110500.0,
+     "due_date": "2027-10-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 72,
+   "name": "محمد جوده جوده علاءالدين",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 124119,
+   "area": "60",
+   "tier": "باقة متكاملة",
+   "total_price": 400000.0,
+   "paid": null,
+   "remaining": 400000.0,
+   "deposit": null,
+   "phone": "01227596865",
+   "contract": "تم",
+   "notes": "يتم التواصل مع العميل لاختيار لون الدهانات والسيراميك",
+   "handover": null,
+   "booking_month": "سبتمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 150000.0,
+     "due_date": "2026-12-01",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 150000.0,
+     "due_date": "2027-03-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 150000.0,
+     "due_date": "2027-06-01",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 150000.0,
+     "due_date": "2027-09-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 73,
+   "name": "ابانوب سليم نمر رياض",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 128702,
+   "area": "90",
+   "tier": "باقة متكاملة  3 غرف",
+   "total_price": 555000.0,
+   "paid": null,
+   "remaining": 515000.0,
+   "deposit": 40000.0,
+   "phone": "01019988087",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "سبتمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 225000.0,
+     "due_date": "2026-12-07",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 225000.0,
+     "due_date": "2027-03-07",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 225000.0,
+     "due_date": "2027-06-07",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 225000.0,
+     "due_date": "2027-09-07",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 74,
+   "name": "ابانوب سليم نمر رياض",
+   "category": "تشطيب",
+   "status": "نشط",
+   "sheet": "التشطيب",
+   "building": 124,
+   "unit": 128725,
+   "area": "90",
+   "tier": "باقة متكاملة  3 غرف",
+   "total_price": 555000.0,
+   "paid": null,
+   "remaining": 515000.0,
+   "deposit": 40000.0,
+   "phone": "01019988087",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "سبتمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 225000.0,
+     "due_date": "2026-12-07",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 225000.0,
+     "due_date": "2027-03-07",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 225000.0,
+     "due_date": "2027-06-07",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 225000.0,
+     "due_date": "2027-09-07",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 75,
+   "name": "سعاد ابراهيم خميس حسن السيد",
+   "category": "باقة متكاملة",
+   "status": "نشط",
+   "sheet": "باقة متكاملة",
+   "building": 124,
+   "unit": 124024,
+   "area": "60 م",
+   "tier": "باقة متكاملة",
+   "total_price": 750000.0,
+   "paid": null,
+   "remaining": 256500.0,
+   "deposit": 148500.0,
+   "phone": "01157024532",
+   "contract": null,
+   "notes": "85000",
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 50000.0,
+     "due_date": "2026-10-30",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 106250.0,
+     "due_date": "2027-02-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 106250.0,
+     "due_date": "2027-05-01",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 106250.0,
+     "due_date": "2027-08-01",
+     "note": null
+    },
+    {
+     "seq": 5,
+     "amount": 106250.0,
+     "due_date": "2027-11-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 76,
+   "name": "جابر عبد الرحيم علي محمود & التركي جروب",
+   "category": "باقة متكاملة",
+   "status": "نشط",
+   "sheet": "باقة متكاملة",
+   "building": 123,
+   "unit": 123612,
+   "area": "90 م",
+   "tier": "باقة متكاملة  3 غرف",
+   "total_price": 925000.0,
+   "paid": 0.0,
+   "remaining": -120000.0,
+   "deposit": 582500.0,
+   "phone": null,
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يوليو",
+   "installments": []
+  },
+  {
+   "id": 77,
+   "name": "اسلام محمد عبد الرازق عبد القادر",
+   "category": "باقة متكاملة",
+   "status": "نشط",
+   "sheet": "باقة متكاملة",
+   "building": 128,
+   "unit": 128726,
+   "area": "30",
+   "tier": "باقة متكاملة",
+   "total_price": 820000.0,
+   "paid": null,
+   "remaining": 375800.0,
+   "deposit": 34200.0,
+   "phone": "01274997711",
+   "contract": "تم",
+   "notes": "شامل الغفرة",
+   "handover": null,
+   "booking_month": "اغسطس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 110500.0,
+     "due_date": "2027-01-01",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 110500.0,
+     "due_date": "2027-04-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 110500.0,
+     "due_date": "2027-07-01",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 110500.0,
+     "due_date": "2027-10-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 78,
+   "name": "محمد جوده جوده علاءالدين",
+   "category": "باقة متكاملة",
+   "status": "نشط",
+   "sheet": "باقة متكاملة",
+   "building": 124,
+   "unit": 124119,
+   "area": "60",
+   "tier": "باقة متكاملة",
+   "total_price": 800000.0,
+   "paid": null,
+   "remaining": null,
+   "deposit": null,
+   "phone": "01227596865",
+   "contract": "تم",
+   "notes": "يتم التواصل مع العميل لاختيار لون الدهانات والسيراميك",
+   "handover": null,
+   "booking_month": "سبتمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 150000.0,
+     "due_date": "2026-12-01",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 150000.0,
+     "due_date": "2027-03-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 150000.0,
+     "due_date": "2027-06-01",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 150000.0,
+     "due_date": "2027-09-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 79,
+   "name": "ابانوب سليم نمر رياض",
+   "category": "باقة متكاملة",
+   "status": "نشط",
+   "sheet": "باقة متكاملة",
+   "building": 124,
+   "unit": 128702,
+   "area": "90",
+   "tier": "باقة متكاملة  3 غرف",
+   "total_price": 1110000.0,
+   "paid": null,
+   "remaining": 515000.0,
+   "deposit": 40000.0,
+   "phone": "01019988087",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "سبتمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 225000.0,
+     "due_date": "2026-12-07",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 225000.0,
+     "due_date": "2027-03-07",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 225000.0,
+     "due_date": "2027-06-07",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 225000.0,
+     "due_date": "2027-09-07",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 80,
+   "name": "ابانوب سليم نمر رياض",
+   "category": "باقة متكاملة",
+   "status": "نشط",
+   "sheet": "باقة متكاملة",
+   "building": 124,
+   "unit": 128725,
+   "area": "90",
+   "tier": "باقة متكاملة  3 غرف",
+   "total_price": 1110000.0,
+   "paid": null,
+   "remaining": 515000.0,
+   "deposit": 40000.0,
+   "phone": "01019988087",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "سبتمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 225000.0,
+     "due_date": "2026-12-07",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 225000.0,
+     "due_date": "2027-03-07",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 225000.0,
+     "due_date": "2027-06-07",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 225000.0,
+     "due_date": "2027-09-07",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 81,
+   "name": "بلال ابراهيم محمد حسن  /  هبه علي احمد",
+   "category": "فرش",
+   "status": "نشط",
+   "sheet": "فرش",
+   "building": 218,
+   "unit": 218926,
+   "area": "30 م",
+   "tier": null,
+   "total_price": 189000.0,
+   "paid": null,
+   "remaining": null,
+   "deposit": 189000.0,
+   "phone": "01012221626",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": []
+  },
+  {
+   "id": 82,
+   "name": "بلال ابراهيم محمد حسن",
+   "category": "فرش",
+   "status": "نشط",
+   "sheet": "فرش",
+   "building": 121,
+   "unit": 121103,
+   "area": null,
+   "tier": null,
+   "total_price": 220000.0,
+   "paid": null,
+   "remaining": null,
+   "deposit": 189000.0,
+   "phone": null,
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": []
+  },
+  {
+   "id": 83,
+   "name": "ابراهيم حسن ابراهيم السيد",
+   "category": "فرش",
+   "status": "نشط",
+   "sheet": "فرش",
+   "building": 123,
+   "unit": 123718,
+   "area": "60",
+   "tier": null,
+   "total_price": 235000.0,
+   "paid": 45000.0,
+   "remaining": 90000.0,
+   "deposit": 100000.0,
+   "phone": null,
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 45000.0,
+     "due_date": "2026-07-27",
+     "note": "تم السداد في 27/07/2026"
+    },
+    {
+     "seq": 2,
+     "amount": 45000.0,
+     "due_date": "2026-10-27",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 45000.0,
+     "due_date": "2027-01-27",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 84,
+   "name": "عوض قاسم زيدان",
+   "category": "فرش",
+   "status": "نشط",
+   "sheet": "فرش",
+   "building": 129,
+   "unit": 129804,
+   "area": "60",
+   "tier": null,
+   "total_price": 200000.0,
+   "paid": null,
+   "remaining": null,
+   "deposit": 200000.0,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": null,
+   "installments": []
+  },
+  {
+   "id": 85,
+   "name": "عطية متولي عطية متولي",
+   "category": "فرش",
+   "status": "نشط",
+   "sheet": "فرش",
+   "building": 122,
+   "unit": 122,
+   "area": "82 م",
+   "tier": "فرش واجهزة",
+   "total_price": 458000.0,
+   "paid": null,
+   "remaining": 298000.0,
+   "deposit": 160000.0,
+   "phone": "01225247521",
+   "contract": "تم",
+   "notes": "عقد توريد اثاث  + اجهزة كهربائية",
+   "handover": null,
+   "booking_month": "يونية",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 141000.0,
+     "due_date": "2026-09-10",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 78000.0,
+     "due_date": "2026-12-10",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 79000.0,
+     "due_date": "2027-03-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 86,
+   "name": "احمد محمد اشرف محمد كمال نبيه الدالي",
+   "category": "فرش",
+   "status": "نشط",
+   "sheet": "فرش",
+   "building": 223,
+   "unit": 223402,
+   "area": "60 م",
+   "tier": "فرش واجهزة",
+   "total_price": 249600.0,
+   "paid": 57000.0,
+   "remaining": 48000.0,
+   "deposit": 144600.0,
+   "phone": "01007804654",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "يونية",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 57000.0,
+     "due_date": "2026-08-01",
+     "note": "دفع في 22/08"
+    },
+    {
+     "seq": 2,
+     "amount": 24000.0,
+     "due_date": "2026-09-16",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 24000.0,
+     "due_date": "2026-11-16",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 87,
+   "name": "جابر عبد الرحيم علي محمود",
+   "category": "فرش",
+   "status": "نشط",
+   "sheet": "فرش",
+   "building": null,
+   "unit": null,
+   "area": null,
+   "tier": "باقة مجمعة",
+   "total_price": null,
+   "paid": null,
+   "remaining": 0.0,
+   "deposit": null,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": null,
+   "installments": []
+  },
+  {
+   "id": 88,
+   "name": "محمود محمد عبد السلام يوسف الفناجيلي",
+   "category": "فرش",
+   "status": "نشط",
+   "sheet": "فرش",
+   "building": 240,
+   "unit": 240523,
+   "area": "60",
+   "tier": "فرش واجهزة",
+   "total_price": 365000.0,
+   "paid": null,
+   "remaining": 240000.0,
+   "deposit": 125000.0,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "اغسطس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 60000.0,
+     "due_date": "2026-11-03",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 60000.0,
+     "due_date": "2027-02-03",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 60000.0,
+     "due_date": "2027-05-03",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 60000.0,
+     "due_date": "2027-08-03",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 89,
+   "name": "أميرة محمد علي محمد",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 124,
+   "unit": 124113,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": -75000.0,
+   "remaining": 300000.0,
+   "deposit": 75000.0,
+   "phone": "0097433233081",
+   "contract": "لا",
+   "notes": "لم يتم التوقيع",
+   "handover": "2026-03-01",
+   "booking_month": "أغسطس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2025-11-10",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-02-10",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2026-05-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 90,
+   "name": "محمد مصطفي عطية السعران(محمدكريم )",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 123,
+   "unit": 123204,
+   "area": "60 م",
+   "tier": "الفضية",
+   "total_price": 320000.0,
+   "paid": null,
+   "remaining": 320000.0,
+   "deposit": 0.0,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "يناير",
+   "installments": []
+  },
+  {
+   "id": 91,
+   "name": "زكريا احمد زكريا جمعة ورشانه",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 124,
+   "unit": 124106,
+   "area": "60 م",
+   "tier": "الفضية",
+   "total_price": 340000.0,
+   "paid": null,
+   "remaining": 340000.0,
+   "deposit": null,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "فبراير",
+   "installments": []
+  },
+  {
+   "id": 92,
+   "name": "ايهاب محمد عبد الرحمن",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 124,
+   "unit": 124011,
+   "area": "60م",
+   "tier": null,
+   "total_price": 300000.0,
+   "paid": 50000.0,
+   "remaining": 225000.0,
+   "deposit": 25000.0,
+   "phone": null,
+   "contract": "تم",
+   "notes": null,
+   "handover": "2026-03-01",
+   "booking_month": "نوفمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2025-12-20",
+     "note": "دفع 50 الف"
+    },
+    {
+     "seq": 2,
+     "amount": 100000.0,
+     "due_date": "2026-02-15",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 100000.0,
+     "due_date": "2026-05-15",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 93,
+   "name": "عوض قاسم زيدان يونس بكار",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 123,
+   "unit": 123911,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": null,
+   "remaining": 225000.0,
+   "deposit": 75000.0,
+   "phone": null,
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ديسمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 75000.0,
+     "due_date": "2026-03-18",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 75000.0,
+     "due_date": "2026-06-18",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 75000.0,
+     "due_date": "2026-09-18",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 94,
+   "name": "محمود المنشاوي",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 124,
+   "unit": 124317,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": null,
+   "remaining": 280000.0,
+   "deposit": 20000.0,
+   "phone": "01555172218",
+   "contract": "تم",
+   "notes": "لم يتم التوقيع",
+   "handover": "2026-03-01",
+   "booking_month": "سبتمبر",
+   "installments": []
+  },
+  {
+   "id": 95,
+   "name": "عبده زين عبدالبصير طه",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 128,
+   "unit": 128721,
+   "area": "60م",
+   "tier": "الفضية الجديدة",
+   "total_price": 340000.0,
+   "paid": null,
+   "remaining": 340000.0,
+   "deposit": null,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "مارس",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 85000.0,
+     "due_date": "2026-01-07",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-01-10",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2027-01-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 96,
+   "name": "كريم محمد عبد المعطي",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 123,
+   "unit": 123724,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 380000.0,
+   "paid": null,
+   "remaining": 247000.0,
+   "deposit": 133000.0,
+   "phone": "01222883620",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 95000.0,
+     "due_date": "2026-07-10",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 76000.0,
+     "due_date": "2026-10-10",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 76000.0,
+     "due_date": "2027-01-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 97,
+   "name": "اسلام صلاح خلف صالح",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 123,
+   "unit": 123223,
+   "area": "60",
+   "tier": "الفضية الجديدة",
+   "total_price": 340000.0,
+   "paid": null,
+   "remaining": 255000.0,
+   "deposit": 85000.0,
+   "phone": "01126285102",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "فبراير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 85000.0,
+     "due_date": "2026-06-01",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-09-01",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2026-12-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 98,
+   "name": "دينا سمير عبد العزيز",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 128,
+   "unit": 128001,
+   "area": "30م",
+   "tier": "الفضية",
+   "total_price": 170000.0,
+   "paid": null,
+   "remaining": 85000.0,
+   "deposit": 85000.0,
+   "phone": "01066695499",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ديسمبر",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 42500.0,
+     "due_date": "2026-05-01",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 42500.0,
+     "due_date": "2026-09-01",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 99,
+   "name": "اسلام علاء محمد فاضل",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 123,
+   "unit": 123012,
+   "area": "60 م",
+   "tier": "الفضية",
+   "total_price": 340000.0,
+   "paid": 85000.0,
+   "remaining": 255000.0,
+   "deposit": 0.0,
+   "phone": "01031946008",
+   "contract": "تم",
+   "notes": "تم تعديل مواعيد الاقساط",
+   "handover": null,
+   "booking_month": "فبراير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 85000.0,
+     "due_date": "2026-03-10",
+     "note": "دفع"
+    },
+    {
+     "seq": 2,
+     "amount": 85000.0,
+     "due_date": "2026-10-15",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 85000.0,
+     "due_date": "2026-12-15",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 85000.0,
+     "due_date": "2027-02-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 100,
+   "name": "مدحت الشاعر تبع سامي",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 123,
+   "unit": 123924,
+   "area": "60م",
+   "tier": "الفضية",
+   "total_price": 300000.0,
+   "paid": null,
+   "remaining": 225000.0,
+   "deposit": 75000.0,
+   "phone": "01224435297",
+   "contract": "تم",
+   "notes": null,
+   "handover": "2025-12-01",
+   "booking_month": "أغسطس",
+   "installments": []
+  },
+  {
+   "id": 101,
+   "name": "اسلام علاء محمد فاضل",
+   "category": "تشطيب",
+   "status": "ملغي",
+   "sheet": "تشطيب ملغي",
+   "building": 123,
+   "unit": 123013,
+   "area": "30 م",
+   "tier": "الفضية",
+   "total_price": 200000.0,
+   "paid": 50000.0,
+   "remaining": 150000.0,
+   "deposit": 0.0,
+   "phone": null,
+   "contract": null,
+   "notes": "01031946008",
+   "handover": null,
+   "booking_month": "فبراير",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 50000.0,
+     "due_date": "2026-03-10",
+     "note": "دفع"
+    },
+    {
+     "seq": 2,
+     "amount": 50000.0,
+     "due_date": "2026-10-15",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 50000.0,
+     "due_date": "2026-12-15",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 50000.0,
+     "due_date": "2027-02-10",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 102,
+   "name": "كريم محمد عبد المعطي",
+   "category": "فرش",
+   "status": "ملغي",
+   "sheet": "فرش ملغي",
+   "building": 123,
+   "unit": 123724,
+   "area": "60 م",
+   "tier": "الفضية الجديدة",
+   "total_price": 200000.0,
+   "paid": null,
+   "remaining": 200000.0,
+   "deposit": null,
+   "phone": "01222883620",
+   "contract": "تم",
+   "notes": null,
+   "handover": null,
+   "booking_month": "ابريل",
+   "installments": [
+    {
+     "seq": 1,
+     "amount": 50000.0,
+     "due_date": "2026-05-15",
+     "note": null
+    },
+    {
+     "seq": 2,
+     "amount": 50000.0,
+     "due_date": "2026-08-15",
+     "note": null
+    },
+    {
+     "seq": 3,
+     "amount": 50000.0,
+     "due_date": "2026-11-15",
+     "note": null
+    },
+    {
+     "seq": 4,
+     "amount": 50000.0,
+     "due_date": "2027-02-15",
+     "note": null
+    }
+   ]
+  },
+  {
+   "id": 103,
+   "name": "حاتم",
+   "category": "فرش",
+   "status": "ملغي",
+   "sheet": "فرش ملغي",
+   "building": 122,
+   "unit": 122916,
+   "area": "60",
+   "tier": null,
+   "total_price": 235000.0,
+   "paid": null,
+   "remaining": 235000.0,
+   "deposit": null,
+   "phone": null,
+   "contract": null,
+   "notes": null,
+   "handover": null,
+   "booking_month": "يونيو",
+   "installments": []
+  }
+ ],
+ "poa_count": 64,
+ "today": "2026-10-01"
+};
 
-const units = [
-  {unit:"123508",owner:"Mr. Khaled Ali",sup:"عبدالرحمن",total:340000,paid:170000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/p/48af26edf93c833abe2301a60cf414ed"},
-  {unit:"123518",owner:"Ms. Amal Abou El-Enein",sup:"عبدالرحمن",total:340000,paid:135000,overdue:2,pending:1,paidCount:1,url:"https://app.notion.com/p/2dff26edf93c836ca9b80111978daf4f"},
-  {unit:"123608",owner:"Mr. Ahmed Mohamed",sup:"عبدالرحمن",total:340000,paid:170000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/p/c01f26edf93c8334bdd78189c5ec38b9"},
-  {unit:"123612",owner:"Mr. Gaber Abdel-Rahim",sup:"عبدالرحمن",total:582500,paid:582500,overdue:0,pending:0,paidCount:0,url:"https://app.notion.com/p/120f26edf93c83bfaa0f01142f55f767"},
-  {unit:"123616",owner:"Ms. Samar Mahmoud Mansour",sup:"عبدالرحمن",total:300000,paid:50000,overdue:3,pending:1,paidCount:0,url:"https://app.notion.com/p/d8af26edf93c8375bb5f81586dac8a1d"},
-  {unit:"123618",owner:"Mr. Khaled Bahaa",sup:"عبدالرحمن",total:345000,paid:90000,overdue:0,pending:4,paidCount:1,url:"https://app.notion.com/p/ea4f26edf93c82049fca01b8206716c0"},
-  {unit:"122614",owner:"Mr. Wael Abdel-Kader & Mr. Osama",sup:"محمد فتحي",total:340000,paid:85000,overdue:1,pending:2,paidCount:2,url:"https://app.notion.com/e11f26edf93c823d8fbe81ecd88dfccc"},
-  {unit:"122724",owner:"Mr. Mohamed Hassanein",sup:"محمد فتحي",total:620000,paid:465000,overdue:0,pending:1,paidCount:3,url:"https://app.notion.com/335f26edf93c826e99ec01068a35fd29"},
-  {unit:"122824",owner:"Mr. Tamer Hassanein",sup:"محمد فتحي",total:620000,paid:465000,overdue:0,pending:1,paidCount:3,url:"https://app.notion.com/300f26edf93c831593c60160020e919c"},
-  {unit:"123011",owner:"Mr. Ramy Abdel-Fattah",sup:"محمد فتحي",total:400000,paid:205000,overdue:0,pending:3,paidCount:2,url:"https://app.notion.com/dd9f26edf93c83df914f0189d0f6da6c"},
-  {unit:"123013",owner:"Mr. Islam Alaa",sup:"محمد فتحي",total:200000,paid:50000,overdue:0,pending:3,paidCount:1,url:"https://app.notion.com/ef3f26edf93c836e8387010378eee8a6"},
-  {unit:"123023",owner:"Mr. Wael Awad",sup:"محمد فتحي",total:345000,paid:175000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/818f26edf93c826195fb81bb98e5630e"},
-  {unit:"123323",owner:"Mr. Ahmed Nasr",sup:"محمد فتحي",total:250000,paid:200000,overdue:0,pending:2,paidCount:1,url:"https://app.notion.com/d33f26edf93c83b4bb4e01f422ed12d9"},
-  {unit:"129319",owner:"Mr. Ahmed Mabrouk",sup:"محمد فتحي",total:350000,paid:125000,overdue:1,pending:3,paidCount:1,url:"https://app.notion.com/3a6f26edf93c8330a2d001a1e4a7e9c8"},
-  {unit:"123218",owner:"Mr. Mohamed Hussein",sup:"ايهاب الشامي",total:340000,paid:170000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/p/795f26edf93c83698d7d81d6c183118e"},
-  {unit:"123325",owner:"Ms. Fadwa Ibrahim",sup:"ايهاب الشامي",total:500000,paid:250000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/p/c49f26edf93c83278f1481cbe02ac855"},
-  {unit:"123408",owner:"Mr. Hussein Mohamed",sup:"ايهاب الشامي",total:325000,paid:255000,overdue:1,pending:0,paidCount:2,url:"https://app.notion.com/p/435f26edf93c834591498144dec6c9ae"},
-  {unit:"123417",owner:"Mr. Mohamed Taher",sup:"ايهاب الشامي",total:300000,paid:225000,overdue:0,pending:1,paidCount:3,url:"https://app.notion.com/p/62bf26edf93c83309956815a2b33434a"},
-  {unit:"123418",owner:"Mr. Abdel-Nasser",sup:"ايهاب الشامي",total:320000,paid:0,overdue:0,pending:4,paidCount:0,url:"https://app.notion.com/p/27df26edf93c821c89f48191c1d7b790"},
-  {unit:"123420",owner:"Mr. Mohamed Gamal",sup:"ايهاب الشامي",total:515000,paid:128750,overdue:1,pending:2,paidCount:1,url:"https://app.notion.com/p/444f26edf93c83b8aa698113b693dd52"},
-  {unit:"123425",owner:"Mr. Ahmed Fawzy",sup:"ايهاب الشامي",total:500000,paid:250000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/p/870f26edf93c82e48abd8104a8d52929"},
-  {unit:"123101",owner:"Ms. Marwa Hamdy",sup:"وائل",total:205000,paid:51000,overdue:1,pending:3,paidCount:1,url:"https://app.notion.com/83af26edf93c836bae310195126188b8"},
-  {unit:"123115",owner:"Mr. Mohamed Farouk",sup:"وائل",total:345000,paid:90000,overdue:1,pending:2,paidCount:1,url:"https://app.notion.com/29af26edf93c8276bdac01f519c31644"},
-  {unit:"123204",owner:"Mr. Mohamed Mostafa",sup:"وائل",total:380000,paid:110000,overdue:0,pending:3,paidCount:1,url:"https://app.notion.com/af0f26edf93c8275baba811d170ec4c2"},
-  {unit:"123718",owner:"Mr. Ibrahim Hassan",sup:"وائل",total:380000,paid:217000,overdue:0,pending:2,paidCount:2,url:"https://app.notion.com/644f26edf93c82798eec01cb30715c25"},
-  {unit:"123719",owner:"ElTorky Group",sup:"وائل",total:350000,paid:350000,overdue:0,pending:0,paidCount:1,url:"https://app.notion.com/34af26edf93c83a89b0001a8441c4cab"},
-  {unit:"123821",owner:"Mr. Nader El-Sayed",sup:"وائل",total:370000,paid:130000,overdue:1,pending:3,paidCount:1,url:"https://app.notion.com/820f26edf93c836e981901961616aa71"},
-  {unit:"123913",owner:"Mr. Shady Adel",sup:"وائل",total:270000,paid:260000,overdue:1,pending:0,paidCount:0,url:"https://app.notion.com/9c9f26edf93c82c58aa581f4ac94c57d"},
-  {unit:"123923",owner:"Mr. Ayman Youssef",sup:"وائل",total:345000,paid:90000,overdue:1,pending:2,paidCount:1,url:"https://app.notion.com/43ef26edf93c825580138146d2a0d6ba"}
-];
+const MONTH_AR = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+const TIER_NORMALIZE = { "الفضيه": "الفضية" };
 
-// derive fields
-units.forEach(u => {
-  u.remaining = u.total - u.paid;
-  u.percent = u.total > 0 ? Math.round((u.paid / u.total) * 100) : 0;
-  u.status = u.remaining <= 0 ? 'paid' : (u.overdue > 0 ? 'overdue' : 'pending');
-});
-
-function fmt(n) { return n.toLocaleString('en-US'); }
-
-// ---- summary cards ----
-const totalContract = units.reduce((s,u) => s + u.total, 0);
-const totalPaid = units.reduce((s,u) => s + u.paid, 0);
-const totalRemaining = totalContract - totalPaid;
-const overallPercent = Math.round((totalPaid / totalContract) * 100);
-
-document.getElementById('cardTotal').textContent = fmt(totalContract);
-document.getElementById('cardPaid').textContent = fmt(totalPaid);
-document.getElementById('cardRemaining').textContent = fmt(totalRemaining);
-document.getElementById('cardPercent').textContent = overallPercent + '%';
-document.getElementById('lastUpdated').textContent = GENERATED_AT;
-
-// ---- units table (rendered first, independent of charts) ----
-const statusLabel = { paid: 'مدفوعة بالكامل', overdue: 'فيها متأخر', pending: 'جارية' };
-const statusBadgeClass = { paid: 'paid', overdue: 'overdue', pending: 'pending' };
-
-function renderTable(rows) {
-  const body = document.getElementById('unitsBody');
-  body.innerHTML = rows.map(u => `
-    <tr>
-      <td><a class="unit-link" href="${u.url}" target="_blank" rel="noopener">${u.unit}</a></td>
-      <td>${u.owner}</td>
-      <td>${u.sup}</td>
-      <td class="num">${fmt(u.total)}</td>
-      <td class="num">${fmt(u.paid)}</td>
-      <td class="num">${fmt(u.remaining)}</td>
-      <td class="num">${u.percent}%</td>
-      <td><span class="badge ${statusBadgeClass[u.status]}">${statusLabel[u.status]}</span></td>
-    </tr>
-  `).join('');
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function fmtMoney(v){
+  if (v === null || v === undefined || isNaN(v)) return "—";
+  return Math.round(v).toLocaleString('en-US') + " ج.م";
 }
-renderTable(units);
+function fmtNum(v){ return (v===null||v===undefined) ? "—" : v.toLocaleString('en-US'); }
+function fmtDate(iso){
+  if(!iso) return "—";
+  const d = new Date(iso+"T00:00:00");
+  return d.getDate() + " " + MONTH_AR[d.getMonth()] + " " + d.getFullYear();
+}
+function monthKey(iso){ return iso.slice(0,7); }
+function monthLabel(key){ const [y,m] = key.split("-"); return MONTH_AR[parseInt(m,10)-1] + " " + y; }
+function localTodayISO(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate());
+}
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-let sortKey = null, sortDir = 1;
-document.querySelectorAll('#unitsTable thead th').forEach(th => {
-  th.addEventListener('click', () => {
-    const key = th.dataset.key;
-    sortDir = (sortKey === key) ? -sortDir : 1;
-    sortKey = key;
-    const sorted = [...units].sort((a,b) => {
-      let va = a[key], vb = b[key];
-      if (typeof va === 'string') return va.localeCompare(vb, 'ar') * sortDir;
-      return (va - vb) * sortDir;
+/* Split every active booking's installments into paid / overdue / not-yet-due.
+   The booking's "paid" total (from the sheet) is applied to its installments
+   oldest-first; whatever is left uncovered on an installment whose due date has
+   passed is overdue. Overdue is capped at the booking's stated "remaining". */
+function allocate(records, today){
+  records.forEach(r=>{
+    const insts = (r.installments||[]).filter(i=>i.amount!=null).map(i=>({...i}));
+    insts.sort((a,b)=> (a.due_date||'9999') < (b.due_date||'9999') ? -1 : 1);
+    if (r.status !== 'نشط'){
+      insts.forEach(i=>{ i.paidPart=0; i.late=0; i.future=0; i.counted=false; });
+      r.alloc = insts; return;
+    }
+    let left = r.paid || 0;
+    insts.forEach(i=>{
+      i.counted = true;
+      i.paidPart = Math.min(i.amount, Math.max(left,0));
+      left -= i.paidPart;
+      const unpaid = i.amount - i.paidPart;
+      const isPast = i.due_date && i.due_date < today;
+      i.late = isPast ? unpaid : 0;
+      i.future = isPast ? 0 : unpaid;
     });
-    renderTable(sorted);
+    const totalLate = insts.reduce((s,i)=>s+i.late,0);
+    if (r.remaining != null && totalLate > Math.max(r.remaining,0)){
+      let excess = totalLate - Math.max(r.remaining,0);
+      for (let k = insts.length-1; k>=0 && excess>0; k--){
+        const cut = Math.min(insts[k].late, excess);
+        insts[k].late -= cut; insts[k].paidPart += cut; excess -= cut;
+      }
+    }
+    r.alloc = insts;
   });
-});
-
-// ---- charts: plain SVG/HTML, no external library, works with no internet ----
-const supervisors = ["عبدالرحمن", "محمد فتحي", "ايهاب الشامي", "وائل"];
-const supColors = { "عبدالرحمن": "#2a78d6", "محمد فتحي": "#eb6834", "ايهاب الشامي": "#1baf7a", "وائل": "#eda100" };
-
-function buildSupervisorChart() {
-  const rows = supervisors.map(s => {
-    const list = units.filter(u => u.sup === s);
-    const total = list.reduce((a,u) => a + u.total, 0);
-    const paid = list.reduce((a,u) => a + u.paid, 0);
-    const remaining = total - paid;
-    const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
-    return { name: s, total, paid, remaining, pct };
-  });
-
-  const html = `
-    <div class="bars">
-      ${rows.map(r => `
-        <div class="bar-row">
-          <div class="bar-row-label">
-            <span class="name">${r.name}</span>
-            <span class="pct">${fmt(r.paid)} / ${fmt(r.total)} جنيه (${r.pct}%)</span>
-          </div>
-          <div class="bar-track" title="${r.name}: مدفوع ${fmt(r.paid)} — باقي ${fmt(r.remaining)}">
-            <div class="bar-seg paid-seg" style="width:${r.total ? (r.paid / r.total * 100) : 0}%"></div>
-            <div class="bar-seg remaining-seg" style="width:${r.total ? (r.remaining / r.total * 100) : 0}%"></div>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-    <div class="chart-legend">
-      <span><span class="dot" style="background:var(--good)"></span>المدفوع</span>
-      <span><span class="dot" style="background:var(--critical)"></span>الباقي</span>
-    </div>
-  `;
-  document.getElementById('supervisorChart').innerHTML = html;
 }
 
-function buildStatusDonut() {
-  const statusCounts = {
-    paid: units.filter(u => u.status === 'paid').length,
-    overdue: units.filter(u => u.status === 'overdue').length,
-    pending: units.filter(u => u.status === 'pending').length
-  };
-  const total = units.length;
-  const segs = [
-    { key: 'paid', label: 'مدفوعة بالكامل', color: '#0ca30c', value: statusCounts.paid },
-    { key: 'overdue', label: 'فيها متأخر', color: '#d03b3b', value: statusCounts.overdue },
-    { key: 'pending', label: 'جارية', color: '#fab219', value: statusCounts.pending }
-  ];
+class Dashboard {
+  constructor(data){
+    this.raw = data.records;
+    this.poaCount = data.poa_count;
+    this.snapshot = data.today;
+    this.today = localTodayISO() > data.today ? localTodayISO() : data.today;
+    this.todayMonth = monthKey(this.today);
+    allocate(this.raw, this.today);
+    this.filtered = this.raw;
+    this.sortState = { table:{key:null,dir:'desc'}, upcoming:{key:'due_date',dir:'asc'}, late:{key:'lateAmount',dir:'desc'} };
+    this.charts = {};
+    this.init();
+  }
 
-  const size = 180, r = 70, cx = size/2, cy = size/2, circumference = 2 * Math.PI * r;
-  let offset = 0;
-  const arcs = segs.map(s => {
-    const frac = total > 0 ? s.value / total : 0;
-    const dash = frac * circumference;
-    const circle = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="22"
-      stroke-dasharray="${dash} ${circumference - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})">
-      <title>${s.label}: ${s.value} وحدة</title></circle>`;
-    offset += dash;
-    return circle;
-  }).join('');
+  init(){
+    document.getElementById('snapshot-date').textContent = fmtDate(this.snapshot);
+    document.getElementById('today-date').textContent = fmtDate(this.today);
+    document.getElementById('cancelled-badge').textContent = this.raw.filter(r=>r.status==='ملغي').length + " حجز ملغي";
+    document.getElementById('poa-badge').textContent = this.poaCount + " توكيل عميل مسجّل";
 
-  const svg = `
-    <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img" aria-label="حالة الوحدات">
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--gridline)" stroke-width="22"/>
-      ${arcs}
-      <text x="${cx}" y="${cy - 4}" class="donut-center-value">${total}</text>
-      <text x="${cx}" y="${cy + 16}" class="donut-center-label">وحدة</text>
-    </svg>
-  `;
-  const legend = `
-    <div class="chart-legend">
-      ${segs.map(s => `<span><span class="dot" style="background:${s.color}"></span>${s.label} (${s.value})</span>`).join('')}
-    </div>
-  `;
-  document.getElementById('statusChart').innerHTML = `<div class="donut-wrap">${svg}${legend}</div>`;
+    const catSel = document.getElementById('f-category');
+    [...new Set(this.raw.map(r=>r.category))].forEach(c=>{ catSel.add(new Option(c, c)); });
+
+    const buildings = [...new Set(this.raw.map(r=>r.building).filter(b=>b!==null && b!==undefined))]
+      .sort((a,b)=> (typeof a==='number'&&typeof b==='number') ? a-b : String(a).localeCompare(String(b)));
+    const bSel = document.getElementById('f-building');
+    buildings.forEach(b=> bSel.add(new Option("عمارة "+b, b)));
+
+    const monthSet = new Set();
+    this.raw.forEach(r=> (r.installments||[]).forEach(i=>{ if (i.due_date) monthSet.add(monthKey(i.due_date)); }));
+    this.months = [...monthSet].sort();
+    const fromSel = document.getElementById('f-month-from');
+    const toSel = document.getElementById('f-month-to');
+    this.months.forEach(m=>{ fromSel.add(new Option(monthLabel(m), m)); toSel.add(new Option(monthLabel(m), m)); });
+    this.setFullRange();
+
+    [['clients-table','table'],['upcoming-table','upcoming'],['late-table','late']].forEach(([id,which])=>{
+      document.querySelectorAll('#'+id+' thead th[data-key]').forEach(th=> th.addEventListener('click', ()=> this.sortTable(which, th.dataset.key)));
+    });
+    this.updateSortIndicators('upcoming');
+    this.updateSortIndicators('late');
+    this.applyFilters();
+  }
+
+  setFullRange(){
+    if (!this.months.length) return;
+    document.getElementById('f-month-from').value = this.months[0];
+    document.getElementById('f-month-to').value = this.months[this.months.length-1];
+  }
+
+  resetFilters(){
+    document.getElementById('f-status').value = 'نشط';
+    document.getElementById('f-category').value = 'all';
+    document.getElementById('f-building').value = 'all';
+    document.getElementById('f-search').value = '';
+    this.setFullRange();
+    this.applyFilters();
+  }
+
+  inRange(iso){
+    if (!iso) return false;
+    const k = monthKey(iso);
+    return k >= this.monthFrom && k <= this.monthTo;
+  }
+
+  applyFilters(){
+    const status = document.getElementById('f-status').value;
+    const category = document.getElementById('f-category').value;
+    const building = document.getElementById('f-building').value;
+    const q = document.getElementById('f-search').value.trim().toLocaleLowerCase('ar-EG');
+
+    this.filtered = this.raw.filter(r=>{
+      if (status !== 'all' && r.status !== status) return false;
+      if (category !== 'all' && r.category !== category) return false;
+      if (building !== 'all' && String(r.building) !== building) return false;
+      if (q){
+        const nameMatch = (r.name || '').toLocaleLowerCase('ar-EG').includes(q);
+        const unitMatch = r.unit !== null && r.unit !== undefined && String(r.unit).includes(q);
+        if (!nameMatch && !unitMatch) return false;
+      }
+      return true;
+    });
+
+    let mFrom = document.getElementById('f-month-from').value;
+    let mTo = document.getElementById('f-month-to').value;
+    if (mFrom > mTo){ const t = mFrom; mFrom = mTo; mTo = t; }
+    this.monthFrom = mFrom; this.monthTo = mTo;
+
+    // per-booking late amount inside the selected range (used by tables)
+    this.filtered.forEach(r=>{
+      r.lateAmount = r.alloc.filter(i=>i.counted && this.inRange(i.due_date)).reduce((s,i)=>s+i.late,0);
+    });
+
+    this.renderKPIs();
+    this.renderPeriod();
+    this.renderCharts();
+    this.renderLate();
+    this.renderTable();
+    this.renderUpcoming();
+  }
+
+  renderKPIs(){
+    const d = this.filtered;
+    const paid = d.reduce((s,r)=> s + (r.paid||0), 0);
+    const remaining = d.reduce((s,r)=> s + (r.remaining||0), 0);
+    const rate = (paid+remaining) > 0 ? (paid/(paid+remaining))*100 : 0;
+    const cards = [
+      { label:"عدد الحجوزات", value: fmtNum(d.length), sub:"حسب الفلاتر الحالية" },
+      { label:"إجمالي قيمة العقود", value: fmtMoney(d.reduce((s,r)=> s + (r.total_price||0), 0)), sub:"السعر الكلي للباقات" },
+      { label:"إجمالي المحصَّل", value: fmtMoney(paid), sub:"المدفوع فعليًا", cls:"accent-good" },
+      { label:"إجمالي المتبقي", value: fmtMoney(remaining), sub:"لسه على العملاء (متأخر + قادم)" },
+      { label:"نسبة التحصيل", value: rate.toFixed(1)+"%", sub:"من إجمالي المدفوع والمتبقي" },
+    ];
+    document.getElementById('kpi-row').innerHTML = cards.map(c=>`
+      <div class="kpi-card ${c.cls||''}">
+        <div class="kpi-label">${c.label}</div>
+        <div class="kpi-value">${c.value}</div>
+        <div class="kpi-sub">${c.sub}</div>
+      </div>`).join('');
+  }
+
+  periodInstallments(){
+    const rows = [];
+    this.filtered.forEach(r=> r.alloc.forEach(i=>{
+      if (i.counted && this.inRange(i.due_date)) rows.push({r, i});
+    }));
+    return rows;
+  }
+
+  renderPeriod(){
+    const rows = this.periodInstallments();
+    const total = rows.reduce((s,x)=>s+x.i.amount,0);
+    const paid = rows.reduce((s,x)=>s+x.i.paidPart,0);
+    const late = rows.reduce((s,x)=>s+x.i.late,0);
+    const future = rows.reduce((s,x)=>s+x.i.future,0);
+    const lateRows = rows.filter(x=>x.i.late>0);
+    const lateUnits = new Set(lateRows.map(x=>x.r.id)).size;
+    const anyPastDue = rows.some(x=> x.i.due_date < this.today);
+
+    const sameMonth = this.monthFrom === this.monthTo;
+    document.getElementById('period-range').textContent = sameMonth
+      ? `شهر ${monthLabel(this.monthFrom)}`
+      : `من ${monthLabel(this.monthFrom)} إلى ${monthLabel(this.monthTo)}`;
+
+    let lateCard;
+    if (late > 0){
+      lateCard = { cls:'late accent-critical', label:'المتأخرات', value: fmtMoney(late),
+        sub:`${lateRows.length} قسط متأخر على ${lateUnits} وحدة` };
+    } else if (!anyPastDue){
+      lateCard = { cls:'clear', label:'المتأخرات', value:'مفيش متأخرات', sub:'مواعيد الأقساط في الفترة دي لسه مجاتش' };
+    } else {
+      lateCard = { cls:'clear', label:'المتأخرات', value:'مفيش متأخرات', sub:'كل الأقساط اللي ميعادها فات اتحصَّلت' };
+    }
+    const pctPaid = total>0 ? (paid/total*100).toFixed(0) : 0;
+    const cards = [
+      { label:'المطلوب تحصيله في الفترة', value: fmtMoney(total), sub:`مجموع ${rows.length} قسط مستحق في الفترة` },
+      { cls:'accent-good', label:'اتحصَّل منه', value: fmtMoney(paid), sub:`${pctPaid}% من المطلوب في الفترة` },
+      lateCard,
+      { label:'لسه مجاش ميعاده', value: fmtMoney(future), sub:'أقساط في الفترة ميعادها من النهارده ورايح' },
+    ];
+    document.getElementById('period-kpis').innerHTML = cards.map(c=>`
+      <div class="kpi-card ${c.cls||''}">
+        <div class="kpi-label">${c.label}</div>
+        <div class="kpi-value">${c.value}</div>
+        <div class="kpi-sub">${c.sub}</div>
+      </div>`).join('');
+
+    // month summary table
+    const byMonth = {};
+    rows.forEach(({i})=>{
+      const k = monthKey(i.due_date);
+      byMonth[k] = byMonth[k] || {total:0, paid:0, late:0, future:0};
+      byMonth[k].total += i.amount; byMonth[k].paid += i.paidPart; byMonth[k].late += i.late; byMonth[k].future += i.future;
+    });
+    const keys = Object.keys(byMonth).sort();
+    const stateOf = m=>{
+      if (m.late > 0) return '<span class="pill late">فيه متأخرات</span>';
+      if (m.future > 0 && m.paid > 0) return '<span class="pill partial">جاري التحصيل</span>';
+      if (m.future > 0) return '<span class="pill future">لسه مجاش ميعاده</span>';
+      return '<span class="pill done">اتحصَّل بالكامل</span>';
+    };
+    document.getElementById('months-tbody').innerHTML = keys.map(k=>{
+      const m = byMonth[k];
+      return `<tr>
+        <td><strong>${monthLabel(k)}</strong></td>
+        <td>${fmtMoney(m.total)}</td>
+        <td class="${m.paid>0?'num-good':''}">${m.paid>0 ? fmtMoney(m.paid) : '—'}</td>
+        <td class="${m.late>0?'num-late':''}">${m.late>0 ? fmtMoney(m.late) : '—'}</td>
+        <td>${m.future>0 ? fmtMoney(m.future) : '—'}</td>
+        <td>${stateOf(m)}</td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="6" class="empty">مفيش أقساط في الفترة دي حسب الفلاتر الحالية</td></tr>`;
+    document.getElementById('months-tfoot').innerHTML = keys.length ? `<tr>
+      <td>الإجمالي</td><td>${fmtMoney(total)}</td><td>${fmtMoney(paid)}</td>
+      <td class="${late>0?'num-late':''}">${late>0?fmtMoney(late):'—'}</td><td>${future>0?fmtMoney(future):'—'}</td><td></td>
+    </tr>` : '';
+  }
+
+  renderCharts(){
+    const d = this.filtered;
+    const ink = cssVar('--text-2'), grid = cssVar('--grid');
+    Chart.defaults.font.family = "Cairo, 'Segoe UI', sans-serif";
+    Chart.defaults.color = ink;
+    const series = ['--s1','--s2','--s3','--s4','--s5','--s6','--s7','--s8'].map(cssVar);
+    const moneyTip = { callbacks:{ label:(ctx)=> ` ${ctx.dataset.label}: ${fmtMoney(ctx.parsed.y)}` } };
+    const legend = { position:'bottom', labels:{ usePointStyle:true, padding:14, color:ink } };
+
+    // schedule by month: paid / late / future (range-aware)
+    const byMonth = {};
+    this.periodInstallments().forEach(({i})=>{
+      const k = monthKey(i.due_date);
+      byMonth[k] = byMonth[k] || {paid:0, late:0, future:0};
+      byMonth[k].paid += i.paidPart; byMonth[k].late += i.late; byMonth[k].future += i.future;
+    });
+    const months = Object.keys(byMonth).sort();
+    this.makeChart('chart-schedule','bar',{
+      labels: months.map(monthLabel),
+      datasets:[
+        { label:'اتحصَّل', data: months.map(m=>byMonth[m].paid), backgroundColor: cssVar('--good'), borderRadius:3 },
+        { label:'متأخر', data: months.map(m=>byMonth[m].late), backgroundColor: cssVar('--critical'), borderRadius:3 },
+        { label:'لسه مجاش ميعاده', data: months.map(m=>byMonth[m].future), backgroundColor: series[0], borderRadius:3 },
+      ]
+    },{
+      plugins:{ legend, tooltip: moneyTip },
+      scales:{
+        x:{ stacked:true, grid:{display:false}, ticks:{color:ink, autoSkip:true, maxRotation:60, minRotation:40} },
+        y:{ stacked:true, beginAtZero:true, grid:{color:grid}, ticks:{ color:ink, callback:(v)=>fmtMoney(v) } }
+      }
+    });
+
+    // collection vs remaining by category
+    const byCat = {};
+    d.forEach(r=>{ byCat[r.category] = byCat[r.category] || {paid:0, remaining:0};
+      byCat[r.category].paid += (r.paid||0); byCat[r.category].remaining += Math.max(r.remaining||0,0); });
+    const cc = Object.keys(byCat);
+    this.makeChart('chart-collection','bar',{
+      labels: cc,
+      datasets:[
+        { label:'محصَّل', data: cc.map(k=>byCat[k].paid), backgroundColor: cssVar('--good'), borderRadius:3 },
+        { label:'متبقي', data: cc.map(k=>byCat[k].remaining), backgroundColor: series[1], borderRadius:3 },
+      ]
+    },{
+      plugins:{ legend, tooltip: moneyTip },
+      scales:{
+        x:{ stacked:true, grid:{display:false}, ticks:{color:ink} },
+        y:{ stacked:true, beginAtZero:true, grid:{color:grid}, ticks:{ color:ink, callback:(v)=>fmtMoney(v) } }
+      }
+    });
+
+    // category doughnut
+    const catCounts = {};
+    d.forEach(r=>{ catCounts[r.category] = (catCounts[r.category]||0) + 1; });
+    const catLabels = Object.keys(catCounts);
+    this.makeChart('chart-category','doughnut',{
+      labels: catLabels,
+      datasets:[{ data: catLabels.map(k=>catCounts[k]), backgroundColor: catLabels.map((_,i)=>series[i]), borderColor: cssVar('--surface'), borderWidth:2 }]
+    },{
+      cutout:'62%',
+      plugins:{ legend, tooltip:{ callbacks:{ label:(ctx)=>{
+        const t = ctx.dataset.data.reduce((a,b)=>a+b,0);
+        return ` ${ctx.label}: ${ctx.parsed} (${t?Math.round(ctx.parsed/t*100):0}%)`; } } } }
+    });
+
+    // buildings
+    const byB = {};
+    d.forEach(r=>{ const b = r.building ?? 'غير محدد'; byB[b] = (byB[b]||0)+1; });
+    const top = Object.entries(byB).sort((a,b)=>b[1]-a[1]).slice(0,12);
+    this.makeChart('chart-building','bar',{
+      labels: top.map(x=>"عمارة "+x[0]),
+      datasets:[{ label:'عدد الحجوزات', data: top.map(x=>x[1]), backgroundColor: series[0], borderRadius:3 }]
+    },{
+      indexAxis:'y',
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(ctx)=>` ${ctx.parsed.x} حجز` } } },
+      scales:{ x:{ beginAtZero:true, grid:{color:grid}, ticks:{color:ink, precision:0} }, y:{ grid:{display:false}, ticks:{color:ink} } }
+    });
+  }
+
+  makeChart(id, type, data, options){
+    if (this.charts[id]) this.charts[id].destroy();
+    this.charts[id] = new Chart(document.getElementById(id).getContext('2d'), {
+      type, data, options: Object.assign({ responsive:true, maintainAspectRatio:false, animation:{duration:200} }, options)
+    });
+  }
+
+  sortRows(rows, st){
+    if (!st.key) return rows;
+    return rows.sort((a,b)=>{
+      let av = a[st.key], bv = b[st.key];
+      av = (av===null||av===undefined) ? -Infinity : av;
+      bv = (bv===null||bv===undefined) ? -Infinity : bv;
+      if (typeof av === 'string') av = av.toLocaleLowerCase('ar-EG');
+      if (typeof bv === 'string') bv = bv.toLocaleLowerCase('ar-EG');
+      if (typeof av !== typeof bv){ av = String(av); bv = String(bv); }
+      const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+      return st.dir === 'asc' ? cmp : -cmp;
+    });
+  }
+
+  sortTable(which, key){
+    const st = this.sortState[which];
+    if (st.key === key) st.dir = st.dir === 'asc' ? 'desc' : 'asc';
+    else { st.key = key; st.dir = 'asc'; }
+    this.updateSortIndicators(which);
+    ({table:()=>this.renderTable(), upcoming:()=>this.renderUpcoming(), late:()=>this.renderLate()})[which]();
+  }
+
+  updateSortIndicators(which){
+    const id = {table:'clients-table', upcoming:'upcoming-table', late:'late-table'}[which];
+    const st = this.sortState[which];
+    document.querySelectorAll('#'+id+' thead th[data-key]').forEach(th=>{
+      const base = th.dataset.label || (th.dataset.label = th.textContent.trim());
+      th.textContent = base + (th.dataset.key === st.key ? (st.dir === 'asc' ? ' ▲' : ' ▼') : '');
+    });
+  }
+
+  renderLate(){
+    let rows = [];
+    this.filtered.forEach(r=>{
+      const lateInsts = r.alloc.filter(i=>i.counted && i.late>0 && this.inRange(i.due_date));
+      if (!lateInsts.length) return;
+      const oldest = lateInsts[0];
+      rows.push({ unit:r.unit, name:r.name, building:r.building, category:r.category, phone:r.phone,
+        lateCount: lateInsts.length, lateAmount: lateInsts.reduce((s,i)=>s+i.late,0),
+        oldest: oldest.due_date, note: lateInsts[lateInsts.length-1].note || r.notes || '' });
+    });
+    rows = this.sortRows(rows, this.sortState.late);
+    const totalLate = rows.reduce((s,x)=>s+x.lateAmount,0);
+    document.getElementById('late-count').textContent = rows.length ? `${rows.length} وحدة — ${fmtMoney(totalLate)}` : '';
+    const anyPastDue = this.periodInstallments().some(x=> x.i.due_date < this.today);
+    document.getElementById('late-tbody').innerHTML = rows.map(x=>`
+      <tr>
+        <td><strong>${esc(x.unit ?? '—')}</strong></td>
+        <td class="name-cell">${esc(x.name)}</td>
+        <td>${esc(x.building ?? '—')}</td>
+        <td>${esc(x.category)}</td>
+        <td>${x.lateCount}</td>
+        <td class="num-late">${fmtMoney(x.lateAmount)}</td>
+        <td>${fmtDate(x.oldest)}</td>
+        <td>${esc(x.phone ?? '—')}</td>
+        <td class="note-cell">${esc(x.note) || '—'}</td>
+      </tr>`).join('') || `<tr><td colspan="9" class="empty">${anyPastDue ? 'مفيش متأخرات في الفترة دي — كل الأقساط اللي ميعادها فات اتحصَّلت' : 'مفيش متأخرات — مواعيد الأقساط في الفترة دي لسه مجاتش'}</td></tr>`;
+    document.getElementById('late-tfoot').innerHTML = rows.length ? `<tr>
+      <td colspan="4">الإجمالي</td><td>${rows.reduce((s,x)=>s+x.lateCount,0)}</td>
+      <td class="num-late">${fmtMoney(totalLate)}</td><td colspan="3"></td></tr>` : '';
+  }
+
+  renderTable(){
+    const d = this.sortRows([...this.filtered], this.sortState.table);
+    document.getElementById('table-count').textContent = `${d.length} من ${this.raw.length} حجز`;
+    document.getElementById('clients-tbody').innerHTML = d.map(r=>`
+      <tr>
+        <td class="name-cell">${esc(r.name)}</td>
+        <td>${esc(r.category)}</td>
+        <td>${r.status==='نشط' ? '<span class="pill active">نشط</span>' : '<span class="pill cancelled">ملغي</span>'}</td>
+        <td>${esc(r.building ?? '—')}</td>
+        <td>${esc(r.unit ?? '—')}</td>
+        <td>${esc(r.area ?? '—')}</td>
+        <td>${esc((TIER_NORMALIZE[r.tier]||r.tier) ?? '—')}</td>
+        <td>${fmtMoney(r.total_price)}</td>
+        <td>${fmtMoney(r.paid)}</td>
+        <td>${fmtMoney(r.remaining)}</td>
+        <td class="${r.lateAmount>0?'num-late':''}">${r.status!=='نشط' ? '—' : (r.lateAmount>0 ? fmtMoney(r.lateAmount) : 'لا يوجد')}</td>
+        <td>${fmtDate(r.handover)}</td>
+        <td>${esc(r.phone ?? '—')}</td>
+      </tr>`).join('') || `<tr><td colspan="13" class="empty">لا توجد نتائج مطابقة للفلاتر</td></tr>`;
+  }
+
+  renderUpcoming(){
+    let rows = [];
+    this.filtered.forEach(r=> r.alloc.forEach(i=>{
+      if (!i.counted || !i.due_date || i.due_date < this.today) return;
+      const unpaid = i.amount - i.paidPart;
+      const state = unpaid <= 0 ? 'مدفوع مقدمًا' : (i.paidPart > 0 ? 'مدفوع جزئيًا' : 'لم يُدفع');
+      rows.push({ due_date:i.due_date, unit:r.unit, name:r.name, seq:i.seq, amount:i.amount, unpaid, state });
+    }));
+    rows = this.sortRows(rows, this.sortState.upcoming);
+    document.getElementById('upcoming-count').textContent = `${rows.length} قسط قادم`;
+    const pill = s => s==='مدفوع مقدمًا' ? `<span class="pill done">${s}</span>` : s==='مدفوع جزئيًا' ? `<span class="pill partial">${s}</span>` : `<span class="pill future">${s}</span>`;
+    document.getElementById('upcoming-tbody').innerHTML = rows.map(x=>`
+      <tr>
+        <td>${fmtDate(x.due_date)}</td>
+        <td>${esc(x.unit ?? '—')}</td>
+        <td class="name-cell">${esc(x.name)}</td>
+        <td>${x.seq}</td>
+        <td>${fmtMoney(x.amount)}</td>
+        <td>${x.unpaid>0 ? fmtMoney(x.unpaid) : '—'}</td>
+        <td>${pill(x.state)}</td>
+      </tr>`).join('') || `<tr><td colspan="7" class="empty">لا توجد أقساط قادمة مطابقة للفلاتر</td></tr>`;
+  }
 }
 
-buildSupervisorChart();
-buildStatusDonut();
+const dash = new Dashboard(DATA);
 </script>
-</body>
-</html>
+
+</body></html>
